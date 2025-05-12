@@ -55,7 +55,11 @@ class WebSocketProxy:
             logging.info(f'Closing the client: {self.client_ws.remote_address}')
             await self.client_ws.close()
         await self.close_backend_connection()
-        self.cancel_all_tasks()
+        for task in self.tasks:
+            if not task.done():
+                task.cancel()
+        if self.reconnect_task and not self.reconnect_task.done():
+            self.reconnect_task.cancel()
 
 
     async def close_backend_connection(self):
@@ -63,14 +67,6 @@ class WebSocketProxy:
             logging.info('Closing the backend.')
             await self.backend_ws.close()
             self.backend_ws = None
-
-
-    def cancel_all_tasks(self):
-        for task in self.tasks:
-            if not task.done():
-                task.cancel()
-        if self.reconnect_task and not self.reconnect_task.done():
-            self.reconnect_task.cancel()
 
 
     def may_reconnect_to_backend(self):
