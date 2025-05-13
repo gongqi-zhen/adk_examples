@@ -92,12 +92,15 @@ export default function WebConsole() {
   };
 
   geminiLiveApi.onReceiveResponse = (messageResponse) => {
-    if (messageResponse.type == "AUDIO") {
-      liveAudioOutputManager.playAudioChunk(messageResponse.data);
-    } else if (messageResponse.type == "TEXT") {
-      const message = messageResponse.data;
-      console.log("Gemini said: ", message);
-      setNewModelMessage(message); // Realy the message to child components.
+    for (let i = 0; i < messageResponse.type.length; i++) {
+      if (messageResponse.type[i] == "AUDIO") {
+        liveAudioOutputManager.playAudioChunk(messageResponse.data[i]);
+      }
+      if (messageResponse.type[i] == "TEXT") {
+        const message = messageResponse.data[i];
+        console.log("Gemini said: ", message);
+        setNewModelMessage(message); // Realy the message to child components.
+      }
     }
   };
 
