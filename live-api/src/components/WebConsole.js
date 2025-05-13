@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import TextChat from "components/TextChat";
 import ToggleSwitch from "components/ToggleSwitch";
 import { GeminiLiveAPI } from "lib/gemini-live-api";
+import { LiveAudioOutputManager } from "lib/live-media-manager";
 
 export default function WebConsole() {
 
@@ -10,15 +11,23 @@ export default function WebConsole() {
   const MODEL = "gemini-2.0-flash-live-preview-04-09";
   const API_HOST = "us-central1-aiplatform.googleapis.com"; 
 
-  const _geminiLiveApi = useRef(
-	  new GeminiLiveAPI(PROXY_URL, PROJECT_ID, MODEL, API_HOST)
-  );
-
-  const geminiLiveApi = _geminiLiveApi.current
-
   const [newModelMessage, setNewModelMessage] = useState("");
   const [connectionStatus, setConnectionStatus] = useState("disconnected");
-  const [responseModalities, setResponseModalities] = useState(["TEXT"]);
+  const [responseModality, setResponseModality] = useState("Text");
+  const [audioInput, setAudioInput] = useState("Mic-off");
+
+  const isNotDisconnected = () => {
+    return (connectionStatus !== "disconnected");
+  };
+
+  const _geminiLiveApi = useRef(
+    new GeminiLiveAPI(PROXY_URL, PROJECT_ID, MODEL, API_HOST)
+  );
+  const geminiLiveApi = _geminiLiveApi.current;
+
+  const _liveAudioOutputManager = useRef(null);
+  _liveAudioOutputManager.current = new LiveAudioOutputManager();
+  const liveAudioOutputManger = _liveAudioOutputManager.current;
 
   geminiLiveApi.onErrorMessage = (message) => {
     console.log(message);
@@ -26,7 +35,7 @@ export default function WebConsole() {
   };
 
   const connect = () => {
-    geminiLiveApi.responseModalities = responseModalities;
+    geminiLiveApi.responseModalities = responseModality.toUpperCase();
     geminiLiveApi.systemInstructions = "Talk in Japanese";
     geminiLiveApi.onConnectionStarted = () => {
         setConnectionStatus("connected");
@@ -70,19 +79,30 @@ export default function WebConsole() {
     );
   }
 
+
   const element = (
     <>
       <div className="flex flex-col h-screen">
         <header className="bg-blue-200 p-4 shadow-md z-10 flex-shrink-0">
-          <div className="text-2xl font-bold text-gray-800">Gemini Live API Web Console</div>
+          <div className="text-2xl font-bold text-gray-800">
+	    Gemini Live API Web Console
+          </div>
 	  <br/>
 	  <div>{connectButton}</div>
 	  <br/>
-	  <ToggleSwitch
+          <div><ToggleSwitch
+            id="responseModality"    
             labelLeft="Text" labelRight="Audio"
-            setResponseModalities={setResponseModalities}
-            connectionStatus={connectionStatus}	  
-          />
+            setValue={setResponseModality}
+	    disabled={isNotDisconnected}
+          /></div>
+	  <br/>
+          <div><ToggleSwitch
+            id="audioInput"    
+            labelLeft="Mic-on" labelRight="Mic-off"
+            setValue={setAudioInput}
+	    disabled={() => {return false}}
+          /></div>
 
         </header>
 
