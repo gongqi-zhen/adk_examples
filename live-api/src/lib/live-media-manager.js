@@ -37,7 +37,7 @@ export class LiveAudioOutputManager {
         console.log("initializeAudioContext...");
         this.audioInputContext = new (window.AudioContext ||
             window.webkitAudioContext)({ sampleRate: 24000 });
-        await this.audioInputContext.audioWorklet.addModule("pcm-processor.js");
+        await this.audioInputContext.audioWorklet.addModule("/pcm-processor.js");
         this.workletNode = new AudioWorkletNode(
             this.audioInputContext,
             "pcm-processor",

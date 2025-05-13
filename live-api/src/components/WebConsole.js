@@ -119,10 +119,9 @@ export default function WebConsole() {
   } else if (connectionStatus == "connecting") {
     connectButton = (
       <button className="bg-green-500 hover:bg-gray-400
-	                 text-white font-bold py-2 px-4 rounded"
-              >Connect</button>
+	                 text-white font-bold py-2 px-4 rounded">
+	      Connect</button>
     );
-
   } else {
     connectButton = (
       <button className="bg-green-500 hover:bg-green-600
@@ -154,6 +153,7 @@ export default function WebConsole() {
             labelLeft="Text" labelRight="Audio"
             setValue={setResponseModality}
 	    disabled={isNotDisconnected}
+            isRight={false}
           /></div>
 	  <br/>
 	  <div><DropdownMenu options={[
