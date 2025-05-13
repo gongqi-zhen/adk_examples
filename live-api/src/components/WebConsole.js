@@ -5,7 +5,7 @@ import { GeminiLiveAPI } from "lib/gemini-live-api";
 export default function WebConsole() {
 
   const PROXY_URL = "ws://websocket-proxy-xxxxxxxx.us-central1.run.app/ws"
-  const PROJECT_ID = "etsuji-15pro-poc";
+  const PROJECT_ID = "xxxxxxx";
   const MODEL = "gemini-2.0-flash-live-preview-04-09";
   const API_HOST = "us-central1-aiplatform.googleapis.com"; 
 
