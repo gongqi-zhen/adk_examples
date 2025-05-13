@@ -25,3 +25,9 @@ gcloud run deploy websocket-proxy \
   --cpu 1 \
   --service-account websocket-proxy-sa@$GOOGLE_CLOUD_PROJECT.iam.gserviceaccount.com 
 ```
+
+Emulate local connection for using audio/video from a browser.
+```
+PUBLIC_IP="xxx.xxx.xxx.xxx.bc.googleusercontent.com"
+ssh -L 3000:$PUBLIC_IP:3000 $PUBLIC_IP
+```
