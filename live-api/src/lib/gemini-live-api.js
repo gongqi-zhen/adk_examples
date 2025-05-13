@@ -47,7 +47,7 @@ export class GeminiLiveAPI {
         this.accessToken = "";
         this.webSocket = null;
 
-        console.log("Created Gemini Live API object: ", this);
+//        console.log("Created Gemini Live API object: ", this);
     }
 
     setProjectId(projectId) {
