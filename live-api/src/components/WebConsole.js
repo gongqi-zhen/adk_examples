@@ -25,9 +25,10 @@ export default function WebConsole() {
   );
   const geminiLiveApi = _geminiLiveApi.current;
 
-  const _liveAudioOutputManager = useRef(null);
-  _liveAudioOutputManager.current = new LiveAudioOutputManager();
-  const liveAudioOutputManger = _liveAudioOutputManager.current;
+  const _liveAudioOutputManager = useRef(
+    new LiveAudioOutputManager()
+  );
+  const liveAudioOutputManager = _liveAudioOutputManager.current;
 
   geminiLiveApi.onErrorMessage = (message) => {
     console.log(message);
@@ -53,11 +54,11 @@ export default function WebConsole() {
 
   geminiLiveApi.onReceiveResponse = (messageResponse) => {
     if (messageResponse.type == "AUDIO") {
- //       liveAudioOutputManager.playAudioChunk(messageResponse.data);
+      liveAudioOutputManager.playAudioChunk(messageResponse.data);
     } else if (messageResponse.type == "TEXT") {
-        const message = messageResponse.data;
-        console.log("Gemini said: ", message);
-        setNewModelMessage(message); // Realy the message to child components.
+      const message = messageResponse.data;
+      console.log("Gemini said: ", message);
+      setNewModelMessage(message); // Realy the message to child components.
     }
   };
 
