@@ -31,3 +31,17 @@ Emulate local connection for using audio/video from a browser.
 PUBLIC_IP="xxx.xxx.xxx.xxx.bc.googleusercontent.com"
 ssh -L 3000:$PUBLIC_IP:3000 $PUBLIC_IP
 ```
+
+Deploy frontend
+```
+gcloud builds submit --tag gcr.io/$GOOGLE_CLOUD_PROJECT/live-api-app
+
+gcloud run deploy live-api-app \
+  --image gcr.io/$GOOGLE_CLOUD_PROJECT/live-api-app \
+  --platform managed \
+  --region us-central1 \
+  --allow-unauthenticated \
+  --memory 1Gi \
+  --cpu 1 \
+##  --service-account websocket-proxy-sa@$GOOGLE_CLOUD_PROJECT.iam.gserviceaccount.com 
+```
