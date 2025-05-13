@@ -178,7 +178,7 @@ class WebSocketProxy:
 
     async def handle_backend_to_client(self):
         while True:
-            if self.backend_ws and self.backend_ws.state is not State.CLOSED:
+            if self.is_backend_alive():
                 exception = False
                 try:
                     message = await self.backend_ws.recv()
@@ -191,13 +191,14 @@ class WebSocketProxy:
                     exception = True
                 if exception:
                     self.may_reconnect_to_backend()
-                    await asyncio.sleep(0.1)
+                    await asyncio.sleep(0.5)
             else:
-                await asyncio.sleep(0.5)
                 if self.client_ws.client_state is WebSocketState.DISCONNECTED:
                     self._log('info', 'Client closed.')
                     await self.close_proxy_session()
                     break
+                await asyncio.sleep(0.5)
+                self.may_reconnect_to_backend()
 
 
     async def run(self):
