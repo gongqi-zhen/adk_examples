@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import TextChat from "components/TextChat";
 import ToggleSwitch from "components/ToggleSwitch";
+import DropdownMenu from "components/DropdownMenu";
 import { GeminiLiveAPI } from "lib/gemini-live-api";
 import {
   LiveAudioOutputManager, 
@@ -17,7 +18,8 @@ export default function WebConsole() {
   const [newModelMessage, setNewModelMessage] = useState("");
   const [connectionStatus, setConnectionStatus] = useState("disconnected");
   const [responseModality, setResponseModality] = useState("Text");
-  const [audioInput, setAudioInput] = useState("Mic-on");
+  const [audioInput, setAudioInput] = useState("Mic-off");
+  const [outputLanguage, setOutputLanguage] = useState("English");
 
   useEffect(() => {
     if (connectionStatus !== "connected") {
@@ -45,10 +47,6 @@ export default function WebConsole() {
   );
   const liveAudioOutputManager = _liveAudioOutputManager.current;
 
-//  const _liveAudioInputManager = useRef(null);
-//  if (_liveAudioInputManager.current == null) {
-//    _liveAudioInputManager.current = new LiveAudioInputManager();
-//  }
   const _liveAudioInputManager = useRef(
     new LiveAudioInputManager()
   );
@@ -74,8 +72,9 @@ export default function WebConsole() {
 
   const connect = () => {
     setConnectionStatus("connecting");
-    geminiLiveApi.responseModalities = responseModality.toUpperCase();
-    geminiLiveApi.systemInstructions = "Talk in Japanese";
+    geminiLiveApi.responseModalities = [responseModality.toUpperCase()];
+    const systemInstruction = "Output in " + outputLanguage + " unless user specifies it.";
+    geminiLiveApi.systemInstructions = systemInstruction;
     geminiLiveApi.onConnectionStarted = () => {
       setConnectionStatus("connected");
       if (audioInput == "Mic-on") {
@@ -140,19 +139,29 @@ export default function WebConsole() {
 	  <div>{connectButton}</div>
 	  <br/>
           <div><ToggleSwitch
+            id="audioInput"    
+            labelLeft="Mic-on" labelRight="Mic-off"
+            setValue={setAudioInput}
+	    disabled={() => {return false}}
+	    isRight={true}
+          /></div>
+          <br/>
+          <div><ToggleSwitch
             id="responseModality"    
             labelLeft="Text" labelRight="Audio"
             setValue={setResponseModality}
 	    disabled={isNotDisconnected}
           /></div>
 	  <br/>
-          <div><ToggleSwitch
-            id="audioInput"    
-            labelLeft="Mic-on" labelRight="Mic-off"
-            setValue={setAudioInput}
-	    disabled={() => {return false}}
-          /></div>
-
+	  <div><DropdownMenu options={[
+		  { value: "English", label: "English" },
+		  { value: "Japanese", label: "日本語" },
+		  { value: "Korean", label: "한국어" },
+	        ]} 
+	          placeholder={outputLanguage}
+	          disabled={isNotDisconnected}
+                  onSelect={(option) => setOutputLanguage(option.value)}
+	  /></div>
         </header>
 
         <div className="flex-grow overflow-y-auto p-6 bg-gray-50">

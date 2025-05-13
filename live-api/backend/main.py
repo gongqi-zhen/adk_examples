@@ -13,7 +13,7 @@ from fastapi.websockets import WebSocketState
 
 logging.basicConfig(
     level=logging.INFO,
-    format='%(asctime)s - %(levelname)s - %(session_id)s - %(message)s',
+    format='[%(asctime)s] [%(session_id)s] [%(levelname)s] %(message)s',
     handlers=[logging.StreamHandler(sys.stdout)]
 )
 
@@ -35,7 +35,7 @@ class WebSocketProxy:
         self.setup_message = None
         self.exiting = False
         self.session_id = uuid.uuid4().hex[:8]
-        self._log('info', f'Client connected: {client_websocket.client}')
+        self._log('info', f'client connected: {client_websocket.client}')
 
 
     def _log(self, level, message, *args, **kwargs):
@@ -76,7 +76,7 @@ class WebSocketProxy:
     async def close_proxy_session(self):
         if self.exiting:
             return
-        self._log('info', 'Closing proxy session.')
+        self._log('info', 'closing proxy session.')
         self.exiting = True
         if self.is_client_alive():
             await self.client_ws.close()
@@ -102,7 +102,7 @@ class WebSocketProxy:
 
 
     async def connect_to_backend(self):
-        self._log('info', f'Connecting to backend: {self.backend_url}')
+        self._log('info', f'connecting to backend: {self.backend_url}')
         await self.close_backend_connection()
 
         credentials, project_id = default()
@@ -128,13 +128,13 @@ class WebSocketProxy:
                     await self.backend_ws.send(
                         self.to_normal_json(self.setup_message)
                     )
-                self._log('info', f'Backend connected: {self.backend_url}')
+                self._log('info', f'backend connected: {self.backend_url}')
                 self.reconnect_attempts = 0
                 await self.flush_buffer()
                 return
 
             except Exception as e:
-                self._log('warning', f'Failed to connect backend: {e}')
+                self._log('warning', f'failed to connect backend: {e}')
                 self.reconnect_attempts += 1
                 await asyncio.sleep(delay)
         
@@ -147,7 +147,7 @@ class WebSocketProxy:
             try:
                 await self.backend_ws.send(self.to_normal_json(message))
             except Exception as e:
-                self._log('error', f'Exception during flushing messages: {e}')
+                self._log('error', f'exception during flushing messages: {e}')
                 self.message_buffer.appendleft(message)
                 self.may_reconnect_to_backend()
                 break
@@ -162,17 +162,17 @@ class WebSocketProxy:
                     try:
                         await self.backend_ws.send(self.to_normal_json(message))
                     except Exception as e:
-                        self._log('error', f'Failed sending message to backend: {e}')
-                        self._log('info', 'Buffering started.')
+                        self._log('error', f'failed sending message to backend: {e}')
+                        self._log('info', 'buffering started.')
                         self.message_buffer.append(message)
                         self.may_reconnect_to_backend()
                 else:
                     self.message_buffer.append(message)
                     self.may_reconnect_to_backend()
         except WebSocketDisconnect:
-            self._log('info', 'Client disconnected.')
+            self._log('info', 'client disconnected.')
         except Exception as e:
-            self._log('error', f'Failed receiving from client: {e}')
+            self._log('error', f'failed receiving from client: {e}')
         await self.close_proxy_session()
 
 
@@ -184,17 +184,17 @@ class WebSocketProxy:
                     message = await self.backend_ws.recv()
                     await self.client_ws.send_text(self.to_normal_json(message))
                 except websockets.exceptions.ConnectionClosedOK:
-                    self._log('info', 'Backend closed.')
+                    self._log('info', 'backend closed.')
                     exception = True
                 except Exception as e:
-                    self._log('error', f'Exception during relaying backend to client: {e}')
+                    self._log('error', f'exception during relaying backend to client: {e}')
                     exception = True
                 if exception:
                     self.may_reconnect_to_backend()
                     await asyncio.sleep(0.5)
             else:
                 if self.client_ws.client_state is WebSocketState.DISCONNECTED:
-                    self._log('info', 'Client closed.')
+                    self._log('info', 'client closed.')
                     await self.close_proxy_session()
                     break
                 await asyncio.sleep(0.5)
@@ -213,9 +213,9 @@ class WebSocketProxy:
                 ]
                 await asyncio.gather(*self.tasks)
         except asyncio.CancelledError:
-            self._log('info', f'Proxy task cancelled for client: {self.client_ws.client}')
+            self._log('info', f'proxy task cancelled for client: {self.client_ws.client}')
         except Exception as e:
-            self._log('error', f'Exception in proxy handler: {e}')
+            self._log('error', f'exception in proxy handler: {e}')
 
         await self.close_proxy_session()
 

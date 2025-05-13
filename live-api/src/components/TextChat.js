@@ -42,10 +42,16 @@ export default function TextChat(props) {
     }
     let chatDataNew = chatData.concat(); // clone an array
     const lastMessage = chatDataNew.at(-1);
-    if (lastMessage && lastMessage.role == "model") {
+    if (lastMessage && lastMessage.role == "model"
+        && lastMessage.timestamp > Date.now()-1000) {
       lastMessage.text += newModelMessage;
+      lastMessage.timestamp = Date.now();
     } else {
-      chatDataNew.push({"role": "model", "text": newModelMessage});
+      chatDataNew.push({
+        "role": "model",
+        "text": newModelMessage,
+        "timestamp": Date.now(),
+      });
     }
     setChatData(chatDataNew);
     setNewModelMessage("");
@@ -54,7 +60,11 @@ export default function TextChat(props) {
   const sendText = async () => {
     setButtonDisabled(true);
     let chatDataNew = chatData.concat(); // clone an array
-    chatDataNew.push({"role": "user", "text": inputText});
+    chatDataNew.push({
+      "role": "user",
+      "text": inputText,
+      "timestamp": Date.now(),
+    });
     setChatData(chatDataNew);
     props.sendTextMessage(inputText); // Send text to live API
     setInputText("");
@@ -97,26 +107,23 @@ export default function TextChat(props) {
     inputElement = (
       <>
       <div align="right">
-        <textarea className="
-	      py-2 px-4 border border-blue-300
-              focus:border-blue-500
-              focus:ring focus:ring-blue-200 focus:ring-opacity-50
-              rounded-md outline-none shadow-sm w-80"
-	    style={{resize: "none", width: "400px", height: "80px"}}
-	          value={inputText}
+        <textarea className="py-2 px-4 border border-blue-300
+                             focus:border-blue-500 focus:ring
+                             focus:ring-blue-200 focus:ring-opacity-50
+                             rounded-md outline-none shadow-sm
+                             w-[400px] h-[80px] resize-none"
+                  value={inputText}
                   onChange={(event) => setInputText(event.target.value)} />
       </div>            
       <div align="right">
-        <button
-          className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
-	  onClick={sendText}>Send</button>
+        <button className="bg-blue-500 hover:bg-blue-700
+                           text-white font-bold py-2 px-4 rounded"
+                onClick={sendText}>Send</button>
       </div>
       </>
     );
   } else {
-    inputElement = (
-	    <></>
-    );
+    inputElement = (<></>);
   }
 
   const element = (

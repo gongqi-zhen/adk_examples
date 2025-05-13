@@ -77,7 +77,6 @@ export class GeminiLiveAPI {
         console.log("Message received: ", messageEvent);
         const messageData = JSON.parse(messageEvent.data);
         const message = new GeminiLiveResponseMessage(messageData);
-        console.log("onReceiveMessageCallBack this ", this);
         this.onReceiveResponse(message);
     }
 
@@ -121,6 +120,9 @@ export class GeminiLiveAPI {
                 system_instruction: {
                     parts: [{ text: this.systemInstructions }],
                 },
+                tools: [
+                    { googleSearch: {} },
+                ],
             },
         };
         this.sendMessage(sessionSetupMessage);
@@ -163,5 +165,3 @@ export class GeminiLiveAPI {
         this.sendRealtimeInputMessage(base64Image, mime_type);
     }
 }
-
-console.log("loaded gemini-live-api.js");
