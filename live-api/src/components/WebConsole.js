@@ -1,11 +1,17 @@
 import { useState, useRef, useEffect } from "react";
 import TextChat from "components/TextChat";
+import ToggleSwitch from "components/ToggleSwitch";
 import { GeminiLiveAPI } from "lib/gemini-live-api";
 
 export default function WebConsole() {
 
+<<<<<<< HEAD
   const PROXY_URL = "ws://websocket-proxy-xxxxxxxx.us-central1.run.app/ws"
   const PROJECT_ID = "xxxxxxx";
+=======
+  const PROXY_URL = process.env.NEXT_PUBLIC_PROXY_URL;
+  const PROJECT_ID = process.env.NEXT_PUBLIC_PROJECT_ID;
+>>>>>>> 729e43f (Update)
   const MODEL = "gemini-2.0-flash-live-preview-04-09";
   const API_HOST = "us-central1-aiplatform.googleapis.com"; 
 
@@ -17,15 +23,15 @@ export default function WebConsole() {
 
   const [newModelMessage, setNewModelMessage] = useState("");
   const [connectionStatus, setConnectionStatus] = useState("disconnected");
+  const [responseModality, setResponseModality] = useState("TEXT");
 
   geminiLiveApi.onErrorMessage = (message) => {
     console.log(message);
     setConnectionStatus("disconnected");
   };
 
-
   const connect = () => {
-    geminiLiveApi.responseModalities = ["TEXT"];
+    geminiLiveApi.responseModalities = [responseModality];
     geminiLiveApi.systemInstructions = "Talk in Japanese";
     geminiLiveApi.onConnectionStarted = () => {
         setConnectionStatus("connected");
@@ -75,7 +81,13 @@ export default function WebConsole() {
         <header className="bg-blue-200 p-4 shadow-md z-10 flex-shrink-0">
           <div className="text-2xl font-bold text-gray-800">Gemini Live API Web Console</div>
 	  <br/>
-	  {connectButton}
+	  <div>{connectButton}</div>
+	  <br/>
+	  <ToggleSwitch
+            labelLeft="Text" labelRight="Audio"
+            setResponseModality={setResponseModality}
+            connectionStatus={connectionStatus}	  
+          />
 
         </header>
 
