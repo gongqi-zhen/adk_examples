@@ -2,7 +2,10 @@ import { useState, useRef, useEffect } from "react";
 import TextChat from "components/TextChat";
 import ToggleSwitch from "components/ToggleSwitch";
 import { GeminiLiveAPI } from "lib/gemini-live-api";
-import { LiveAudioOutputManager } from "lib/live-media-manager";
+import {
+  LiveAudioOutputManager, 
+  LiveAudioInputManager, 
+} from "lib/live-media-manager";
 
 export default function WebConsole() {
 
@@ -14,7 +17,19 @@ export default function WebConsole() {
   const [newModelMessage, setNewModelMessage] = useState("");
   const [connectionStatus, setConnectionStatus] = useState("disconnected");
   const [responseModality, setResponseModality] = useState("Text");
-  const [audioInput, setAudioInput] = useState("Mic-off");
+  const [audioInput, setAudioInput] = useState("Mic-on");
+
+  useEffect(() => {
+    if (connectionStatus !== "connected") {
+      return;
+    }
+    if (audioInput == "Mic-on") {
+        startAudioInput();
+    }
+    if (audioInput == "Mic-off") {
+        stopAudioInput();
+    }
+  }, [audioInput]);
 
   const isNotDisconnected = () => {
     return (connectionStatus !== "disconnected");
@@ -30,17 +45,42 @@ export default function WebConsole() {
   );
   const liveAudioOutputManager = _liveAudioOutputManager.current;
 
+//  const _liveAudioInputManager = useRef(null);
+//  if (_liveAudioInputManager.current == null) {
+//    _liveAudioInputManager.current = new LiveAudioInputManager();
+//  }
+  const _liveAudioInputManager = useRef(
+    new LiveAudioInputManager()
+  );
+  const liveAudioInputManager = _liveAudioInputManager.current;
+
+  liveAudioInputManager.onNewAudioRecordingChunk = (audioData) => {
+    console.log("sendAudioMessage");
+    geminiLiveApi.sendAudioMessage(audioData);
+  };
+
   geminiLiveApi.onErrorMessage = (message) => {
     console.log(message);
     setConnectionStatus("disconnected");
   };
 
+  const startAudioInput = () => {
+    liveAudioInputManager.connectMicrophone();
+  }
+
+  const stopAudioInput = () => {
+    liveAudioInputManager.disconnectMicrophone();
+  }
+
   const connect = () => {
+    setConnectionStatus("connecting");
     geminiLiveApi.responseModalities = responseModality.toUpperCase();
     geminiLiveApi.systemInstructions = "Talk in Japanese";
     geminiLiveApi.onConnectionStarted = () => {
-        setConnectionStatus("connected");
-//        startAudioInput();
+      setConnectionStatus("connected");
+      if (audioInput == "Mic-on") {
+        startAudioInput();
+      }
     };
     geminiLiveApi.setProjectId(PROJECT_ID);
     geminiLiveApi.connect(""); // Access token is not required.
@@ -48,8 +88,8 @@ export default function WebConsole() {
 
   const disconnect = () => {
     setConnectionStatus("disconnected");
+    stopAudioInput();
     geminiLiveApi.disconnect();
-  // stopAudioInput();
   };
 
   geminiLiveApi.onReceiveResponse = (messageResponse) => {
@@ -70,16 +110,24 @@ export default function WebConsole() {
   let connectButton;
   if (connectionStatus == "connected") {
     connectButton = (
-      <button className="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded"
+      <button className="bg-red-500 hover:bg-red-600
+	                 text-white font-bold py-2 px-4 rounded"
               onClick={disconnect}>Disconnect</button>
     );
+  } else if (connectionStatus == "connecting") {
+    connectButton = (
+      <button className="bg-green-500 hover:bg-gray-400
+	                 text-white font-bold py-2 px-4 rounded"
+              >Connect</button>
+    );
+
   } else {
     connectButton = (
-      <button className="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded"
+      <button className="bg-green-500 hover:bg-green-600
+	                 text-white font-bold py-2 px-4 rounded"
               onClick={connect}>Connect</button>
     );
   }
-
 
   const element = (
     <>
@@ -112,7 +160,7 @@ export default function WebConsole() {
 	      sendTextMessage={sendTextMessage}
               newModelMessage={newModelMessage}
               setNewModelMessage={setNewModelMessage}
-              connectionStatus={connectionStatus}	    
+              connectionStatus={connectionStatus}
 	    />
         </div>
       </div>

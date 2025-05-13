@@ -35,7 +35,6 @@ export class LiveAudioOutputManager {
         if (this.initialized) return;
 
         console.log("initializeAudioContext...");
-
         this.audioInputContext = new (window.AudioContext ||
             window.webkitAudioContext)({ sampleRate: 24000 });
         await this.audioInputContext.audioWorklet.addModule("pcm-processor.js");
@@ -68,7 +67,8 @@ export class LiveAudioOutputManager {
     }
 }
 
-class LiveAudioInputManager {
+
+export class LiveAudioInputManager {
     constructor() {
         this.audioContext;
         this.mediaRecorder;
@@ -123,7 +123,7 @@ class LiveAudioInputManager {
     }
 
     newAudioRecording(b64AudioData) {
-        console.log("newAudioRecording ");
+    //    console.log("newAudioRecording ");
         this.onNewAudioRecordingChunk(b64AudioData);
     }
 
@@ -142,14 +142,22 @@ class LiveAudioInputManager {
     }
 
     disconnectMicrophone() {
-        try {
-            this.processor.disconnect();
-            this.audioContext.close();
-        } catch {
-            console.error("Error disconnecting microphone");
-        }
-
         clearInterval(this.interval);
+        if (this.stream) {
+            this.stream.getTracks().forEach(track => {track.stop()});
+        }
+        if (this.processor) {
+            this.processor.disconnect();
+        }
+        if (this.audioContext && this.audioContext.state !== 'closed') {
+            this.audioContext.close();
+        }
+//        try {
+//            this.processor.disconnect();
+//            this.audioContext.close();
+//        } catch {
+//            console.error("Error disconnecting microphone");
+//        }
     }
 
     async updateMicrophoneDevice(deviceId) {

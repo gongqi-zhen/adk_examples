@@ -42,7 +42,7 @@ export default function TextChat(props) {
     }
     let chatDataNew = chatData.concat(); // clone an array
     const lastMessage = chatDataNew.at(-1);
-    if (lastMessage.role == "model") {
+    if (lastMessage && lastMessage.role == "model") {
       lastMessage.text += newModelMessage;
     } else {
       chatDataNew.push({"role": "model", "text": newModelMessage});
