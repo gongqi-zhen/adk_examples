@@ -18,7 +18,7 @@ export default function WebConsole() {
 
   const [newModelMessage, setNewModelMessage] = useState("");
   const [connectionStatus, setConnectionStatus] = useState("disconnected");
-  const [responseModality, setResponseModality] = useState("TEXT");
+  const [responseModalities, setResponseModalities] = useState(["TEXT"]);
 
   geminiLiveApi.onErrorMessage = (message) => {
     console.log(message);
@@ -26,7 +26,7 @@ export default function WebConsole() {
   };
 
   const connect = () => {
-    geminiLiveApi.responseModalities = [responseModality];
+    geminiLiveApi.responseModalities = responseModalities;
     geminiLiveApi.systemInstructions = "Talk in Japanese";
     geminiLiveApi.onConnectionStarted = () => {
         setConnectionStatus("connected");
@@ -80,7 +80,7 @@ export default function WebConsole() {
 	  <br/>
 	  <ToggleSwitch
             labelLeft="Text" labelRight="Audio"
-            setResponseModality={setResponseModality}
+            setResponseModalities={setResponseModalities}
             connectionStatus={connectionStatus}	  
           />
 
