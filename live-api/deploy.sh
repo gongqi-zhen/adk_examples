@@ -48,9 +48,9 @@ if $DEPLOY_BACKEND; then
 
   gcloud iam service-accounts create websocket-proxy-sa \
     --display-name "Service Account for WebSocket Proxy"
-
+  sleep 10
+  
   SERVICE_ACCOUNT=websocket-proxy-sa@${PROJECT_ID}.iam.gserviceaccount.com
-
   gcloud projects add-iam-policy-binding $PROJECT_ID \
     --role roles/aiplatform.user \
     --member=serviceAccount:$SERVICE_ACCOUNT
