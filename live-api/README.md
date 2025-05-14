@@ -1,3 +1,7 @@
+# Gemini Live API Web Console demo application
+
+DISCLAIMER: This is not an official Google product
+
 ## Setup
 
 1. Create a new Google cloud project.
