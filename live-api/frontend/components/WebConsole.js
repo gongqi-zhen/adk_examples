@@ -140,21 +140,19 @@ export default function WebConsole() {
 	  <br/>
 	  <div>{connectButton}</div>
 	  <br/>
-          <div><ToggleSwitch
-            id="audioInput"    
-            labelLeft="Mic-on" labelRight="Mic-off"
-            setValue={setAudioInput}
-	    disabled={() => {return false}}
-	    isRight={true}
-          /></div>
+          <div><ToggleSwitch id="audioInput"    
+                             labelLeft="Mic-on" labelRight="Mic-off"
+                             setValue={setAudioInput}
+	                     disabled={() => {return false}}
+	                     isRight={true} />
+          </div>
           <br/>
-          <div><ToggleSwitch
-            id="responseModality"    
-            labelLeft="Text" labelRight="Audio"
-            setValue={setResponseModality}
-	    disabled={isNotDisconnected}
-            isRight={false}
-          /></div>
+          <div><ToggleSwitch id="responseModality"    
+                             labelLeft="Text" labelRight="Audio"
+                             setValue={setResponseModality}
+	                     disabled={isNotDisconnected}
+                             isRight={false} />
+          </div>
 	  <br/>
 	  <div><DropdownMenu options={[
 		  { value: "English", label: "English" },
@@ -163,17 +161,15 @@ export default function WebConsole() {
 	        ]} 
 	          placeholder={outputLanguage}
 	          disabled={isNotDisconnected}
-                  onSelect={(option) => setOutputLanguage(option.value)}
-	  /></div>
+                  onSelect={(option) => setOutputLanguage(option.value)} />
+          </div>
         </header>
 
         <div className="flex-grow overflow-y-auto p-6 bg-gray-50">
-            <TextChat
-	      sendTextMessage={sendTextMessage}
-              newModelMessage={newModelMessage}
-              setNewModelMessage={setNewModelMessage}
-              connectionStatus={connectionStatus}
-	    />
+            <TextChat sendTextMessage={sendTextMessage}
+                      newModelMessage={newModelMessage}
+                      setNewModelMessage={setNewModelMessage}
+                      connectionStatus={connectionStatus}/>
         </div>
       </div>
     </>
