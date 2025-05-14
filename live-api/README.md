@@ -2,6 +2,8 @@
 
 DISCLAIMER: This is not an official Google product
 
+![](https://github.com/enakai00/adk_examples/blob/main/live-api/doc/img/screenshot.png)
+
 ## Setup
 
 1. Create a new Google cloud project.
