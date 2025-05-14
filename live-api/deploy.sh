@@ -1,0 +1,92 @@
+#!/bin/bash
+
+PROJECT_ID=$(gcloud config list --format "value(core.project)")
+PROJECT_NUMBER=$(gcloud projects describe $PROJECT_ID --format="value(projectNumber)")
+REGION=us-central1
+REPO_NAME=cloud-run-source-deploy
+REPO=${REGION}-docker.pkg.dev/$PROJECT_ID/$REPO_NAME
+
+DEPLOY_BACKEND=true
+DEPLOY_FRONTEND=true
+
+echo ""
+echo "## Enabling APIs..."
+
+services=(
+  "aiplatform.googleapis.com"
+  "cloudbuild.googleapis.com"
+  "run.googleapis.com"
+)
+services_list="(""$(IFS='|'; echo "${services[*]}")"")"
+enabled=$(gcloud services list --format json | jq .[].config.name |\
+  grep -E "$services_list" | wc -l)
+if [[ $enabled != ${#services[@]} ]]; then
+  echo "Enabling APIs."
+  services_list="$(IFS=' '; echo "${services[*]}")"
+  gcloud services enable $services_list
+
+  echo "Wait 10 seconds for APIs to be ready."
+  sleep 10
+fi
+
+
+echo ""
+echo "## Creating the image repository..."
+
+gcloud artifacts repositories describe \
+  --location $REGION $REPO_NAME 1>/dev/null 2>&1
+rc=$?
+if [[ $rc != 0 ]]; then
+  gcloud artifacts repositories create $REPO_NAME \
+    --repository-format docker --location $REGION
+
+  echo "Wait 60 seconds for ACLs to be propagated."
+  sleep 60
+fi  
+
+
+if $DEPLOY_BACKEND; then
+  echo ""
+  echo "## Deploying backend..."
+
+  gcloud iam service-accounts create websocket-proxy-sa \
+    --display-name "Service Account for WebSocket Proxy"
+
+  SERVICE_ACCOUNT=websocket-proxy-sa@${PROJECT_ID}.iam.gserviceaccount.com
+
+  gcloud projects add-iam-policy-binding $PROJECT_ID \
+    --role roles/aiplatform.user \
+    --member=serviceAccount:$SERVICE_ACCOUNT
+
+  pushd backend
+  gcloud run deploy websocket-proxy --source . \
+    --region $REGION \
+    --allow-unauthenticated \
+    --service-account $SERVICE_ACCOUNT
+  popd
+fi
+
+BACKEND_URL=$(gcloud run services list --format json | \
+  jq .[].status.url | grep -E "websocket-proxy-.*\.run\.app" | sed s/\"//g)
+
+if $DEPLOY_FRONTEND; then
+  echo ""
+  echo "## Deploying frontend..."
+
+  pushd frontend
+  echo "NEXT_PUBLIC_PROXY_URL=\"${BACKEND_URL//https/wss}/ws\"" > .env.local
+  echo "NEXT_PUBLIC_PROJECT_ID=\"${PROJECT_ID}\"" >> .env.local
+
+  gcloud run deploy gemini-live-api-app --source . \
+    --region $REGION \
+    --allow-unauthenticated \
+    --set-env-vars BACKEND_URL=$BACKEND_URL
+  popd
+fi
+
+APP_URL=$(gcloud run services list --format json | \
+  jq .[].status.url | grep -E "gemini-live-api-app-.*\.run\.app" | sed s/\"//g)
+
+echo ""
+echo "Done."
+echo "Application URL: $APP_URL"
