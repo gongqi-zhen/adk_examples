@@ -39,9 +39,6 @@ rc=$?
 if [[ $rc != 0 ]]; then
   gcloud artifacts repositories create $REPO_NAME \
     --repository-format docker --location $REGION
-
-  echo "Wait 60 seconds for ACLs to be propagated."
-  sleep 60
 fi  
 
 
@@ -57,7 +54,10 @@ if $DEPLOY_BACKEND; then
   gcloud projects add-iam-policy-binding $PROJECT_ID \
     --role roles/aiplatform.user \
     --member=serviceAccount:$SERVICE_ACCOUNT
-
+  
+  echo "Wait 60 seconds for ACLs to be propagated."
+  sleep 60
+  
   pushd backend
   gcloud run deploy websocket-proxy --source . \
     --region $REGION \
