@@ -20,7 +20,7 @@ logging.basicConfig(
 HOST = 'us-central1-aiplatform.googleapis.com'
 BACKEND_URL = f'wss://{HOST}/ws/google.cloud.aiplatform.v1beta1.LlmBidiService/BidiGenerateContent'
 
-MAX_RECONNECT_ATTEMPTS = 10
+MAX_RECONNECT_ATTEMPTS = 3
 INITIAL_RECONNECT_DELAY = 1 # sec
 
 class WebSocketProxy:
