@@ -113,19 +113,19 @@ export default function WebConsole() {
   if (connectionStatus == "connected") {
     connectButton = (
       <button className="bg-red-500 hover:bg-red-600
-	                 text-white font-bold py-2 px-4 rounded"
+                         text-white font-bold py-2 px-4 rounded"
               onClick={disconnect}>Disconnect</button>
     );
   } else if (connectionStatus == "connecting") {
     connectButton = (
-      <button className="bg-green-500 hover:bg-gray-400
-	                 text-white font-bold py-2 px-4 rounded">
+      <button className="bg-gray-400
+                         text-white font-bold py-2 px-4 rounded">
 	      Connect</button>
     );
   } else {
     connectButton = (
       <button className="bg-green-500 hover:bg-green-600
-	                 text-white font-bold py-2 px-4 rounded"
+                         text-white font-bold py-2 px-4 rounded"
               onClick={connect}>Connect</button>
     );
   }

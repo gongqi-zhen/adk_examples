@@ -1,7 +1,7 @@
 class GeminiLiveResponseMessage {
   constructor(data) {
-    this.data = [];//"";
-    this.type = [];//"";
+    this.data = [];
+    this.type = [];
     this.endOfTurn = data?.serverContent?.turnComplete;
 
     if (data?.setupComplete) {
@@ -82,6 +82,9 @@ export class GeminiLiveAPI {
   onReceiveMessage(messageEvent) {
     console.log("Message received: ", messageEvent);
     const messageData = JSON.parse(messageEvent.data);
+    if (messageData?.setupComplete) {
+      this.onConnectionStarted();
+    }
     const message = new GeminiLiveResponseMessage(messageData);
     this.onReceiveResponse(message);
   }
@@ -104,7 +107,6 @@ export class GeminiLiveAPI {
     this.webSocket.onopen = (event) => {
       console.log("websocket open: ", event);
       this.sendInitialSetupMessages();
-      this.onConnectionStarted();
     };
 
     this.webSocket.onmessage = this.onReceiveMessage.bind(this);

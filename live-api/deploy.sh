@@ -6,7 +6,8 @@ REGION=us-central1
 REPO_NAME=cloud-run-source-deploy
 REPO=${REGION}-docker.pkg.dev/$PROJECT_ID/$REPO_NAME
 
-DEPLOY_BACKEND=true
+#DEPLOY_BACKEND=true
+DEPLOY_BACKEND=false
 DEPLOY_FRONTEND=true
 
 echo ""
@@ -51,8 +52,13 @@ if $DEPLOY_BACKEND; then
   sleep 10
   
   SERVICE_ACCOUNT=websocket-proxy-sa@${PROJECT_ID}.iam.gserviceaccount.com
+
   gcloud projects add-iam-policy-binding $PROJECT_ID \
     --role roles/aiplatform.user \
+    --member=serviceAccount:$SERVICE_ACCOUNT
+
+  gcloud projects add-iam-policy-binding $PROJECT_ID \
+    --role roles/iam.serviceAccountTokenCreator \
     --member=serviceAccount:$SERVICE_ACCOUNT
   
   echo "Wait 60 seconds for ACLs to be propagated."
