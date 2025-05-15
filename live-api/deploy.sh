@@ -6,8 +6,7 @@ REGION=us-central1
 REPO_NAME=cloud-run-source-deploy
 REPO=${REGION}-docker.pkg.dev/$PROJECT_ID/$REPO_NAME
 
-#DEPLOY_BACKEND=true
-DEPLOY_BACKEND=false
+DEPLOY_BACKEND=true
 DEPLOY_FRONTEND=true
 
 echo ""
