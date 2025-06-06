@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>自転車旅行プランナー</title>
+    <style>
+      #map {
+        height: 500px;
+        width: 100%;
+      }
+      #info {
+        margin-top: 10px;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>自転車旅行プランナー</h1>
+    <p>地図をクリックして、出発地、経由地、目的地を追加してください。</p>
+    <div id="map"></div>
+    <div id="info">
+      <p>総距離: <span id="distance">0</span> km</p>
+      <p>総所要時間: <span id="duration">0</span> 分</p>
+    </div>
+    <button id="saveButton">このルートを保存</button>
+
+    <hr />
+    <div id="saved-plans-container">
+      <h2>保存したプラン</h2>
+      <ul id="plan-list">
+        <!-- ここにJavaScriptでプランが追加されます -->
+      </ul>
+    </div>
+
+    <script>
+      let map;
+      let directionsService;
+      let directionsRenderer;
+      const waypoints = []; // 経由地を格納する配列
+      const markers = []; // マーカーを格納する配列
+
+      const API_BASE_URL = "__API_BASE_URL__";
+
+      function initMap() {
+        directionsService = new google.maps.DirectionsService();
+        directionsRenderer = new google.maps.DirectionsRenderer();
+
+        map = new google.maps.Map(document.getElementById("map"), {
+          center: { lat: 35.681236, lng: 139.767125 }, // 東京駅周辺
+          zoom: 12,
+        });
+        directionsRenderer.setMap(map);
+
+        // 地図クリックイベント
+        map.addListener("click", (event) => {
+          addWaypoint(event.latLng);
+        });
+
+        loadSavedPlans();
+      }
+
+      // 保存されたプランの一覧をサーバーから読み込む関数
+      async function loadSavedPlans() {
+        try {
+          const response = await fetch(`${API_BASE_URL}/api/plans`);
+          if (!response.ok) {
+            throw new Error("プランの読み込みに失敗しました。");
+          }
+          const plans = await response.json();
+          const planList = document.getElementById("plan-list");
+          planList.innerHTML = ""; // 一覧をクリア
+
+          plans.forEach((plan) => {
+            const li = document.createElement("li");
+            li.textContent = plan.name;
+            li.dataset.id = plan.id; // クリック時に使うため、IDをdata属性に保存
+            li.style.cursor = "pointer"; // クリックできる見た目にする
+            li.style.textDecoration = "underline";
+            planList.appendChild(li);
+          });
+        } catch (error) {
+          console.error(error);
+          alert(error.message);
+        }
+      }
+
+      // プラン一覧がクリックされたときの処理
+      document
+        .getElementById("plan-list")
+        .addEventListener("click", async (event) => {
+          // クリックされたのがLI要素の場合のみ処理
+          if (event.target.tagName === "LI") {
+            const planId = event.target.dataset.id;
+            try {
+              const response = await fetch(
+                `${API_BASE_URL}/api/plans/${planId}`
+              );
+              if (!response.ok) {
+                throw new Error("プラン詳細の読み込みに失敗しました。");
+              }
+              const planDetails = await response.json();
+
+              // 地図をクリア
+              waypoints.length = 0;
+              markers.forEach((marker) => marker.setMap(null));
+              markers.length = 0;
+              directionsRenderer.setDirections({ routes: [] });
+
+              // 取得したデータからウェイポイントを復元
+              planDetails.waypoints.forEach((wp) => {
+                const location = new google.maps.LatLng(wp.lat, wp.lng);
+                waypoints.push({ location: location, stopover: true });
+              });
+
+              // ルートを再描画
+              if (waypoints.length >= 2) {
+                calculateAndDisplayRoute();
+              }
+            } catch (error) {
+              console.error(error);
+              alert(error.message);
+            }
+          }
+        });
+
+      function addWaypoint(location) {
+        // マーカーを地図に追加
+        const marker = new google.maps.Marker({
+          position: location,
+          map: map,
+        });
+        markers.push(marker);
+
+        // 経由地リストに追加
+        waypoints.push({ location: location, stopover: true });
+
+        if (waypoints.length >= 2) {
+          calculateAndDisplayRoute();
+        }
+      }
+
+      function calculateAndDisplayRoute() {
+        const origin = waypoints[0].location;
+        const destination = waypoints[waypoints.length - 1].location;
+        const intermediateWaypoints = waypoints.slice(1, -1);
+
+        directionsService.route(
+          {
+            origin: origin,
+            destination: destination,
+            waypoints: intermediateWaypoints,
+            optimizeWaypoints: true,
+            travelMode: "BICYCLING", // 自転車モードを指定
+          },
+          (response, status) => {
+            if (status === "OK") {
+              // 既存のクリックマーカーは非表示にする
+              markers.forEach((marker) => marker.setMap(null));
+              directionsRenderer.setDirections(response);
+
+              // 距離と時間を計算して表示
+              const route = response.routes[0];
+              let totalDistance = 0;
+              let totalDuration = 0;
+              route.legs.forEach((leg) => {
+                totalDistance += leg.distance.value;
+                totalDuration += leg.duration.value;
+              });
+              document.getElementById("distance").textContent = (
+                totalDistance / 1000
+              ).toFixed(2);
+              document.getElementById("duration").textContent = Math.round(
+                totalDuration / 60
+              );
+            } else {
+              window.alert("Directions request failed due to " + status);
+            }
+          }
+        );
+      }
+
+      // 保存ボタンのイベントリスナー
+      document
+        .getElementById("saveButton")
+        .addEventListener("click", async () => {
+          if (waypoints.length < 2) {
+            alert("ルートを作成してください。");
+            return;
+          }
+          const planName = prompt("この旅行プランの名前を入力してください:");
+          if (!planName) return;
+
+          const routeData = {
+            name: planName,
+            waypoints: waypoints.map((wp) => ({
+              lat: wp.location.lat(),
+              lng: wp.location.lng(),
+            })),
+            createdAt: new Date(),
+          };
+
+          // バックエンドAPIにデータを送信
+          try {
+            const response = await fetch(`${API_BASE_URL}/api/plans`, {
+              // ここは後で作成するバックエンドのURL
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(routeData),
+            });
+            if (response.ok) {
+              alert("ルートが保存されました！");
+            } else {
+              // サーバーがエラーを返した場合（例: 500エラー）
+              const errorData = await response.json();
+              console.error("Save failed:", errorData);
+              alert("保存に失敗しました。サーバーでエラーが発生しました。");
+            }
+          } catch (error) {
+            // 通信自体が失敗した場合（例: CORSエラー、ネットワークエラー）
+            console.error("Error saving route:", error);
+            alert("保存中にエラーが発生しました。通信設定を確認してください。");
+          }
+        });
+    </script>
+    <script
+      async
+      defer
+      src="https://maps.googleapis.com/maps/api/js?key=__GOOGLE_MAPS_API_KEY__&callback=initMap"
+    ></script>
+  </body>
+</html>
