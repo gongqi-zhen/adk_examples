@@ -208,8 +208,21 @@
               document.getElementById("duration").textContent = Math.round(
                 totalDuration / 60
               );
+            } else if (status === "ZERO_RESULTS") {
+              // ルートが見つからなかった場合、分かりやすいメッセージを表示
+              alert(
+                "選択された地点間を結ぶ有効な自転車ルートが見つかりませんでした。\n海の上や、道路のない場所が指定されていないか確認してください。"
+              );
+
+              // 直前に追加したマーカーとウェイポイントを削除して、ユーザーがやり直せるようにする
+              const lastMarker = markers.pop();
+              if (lastMarker) lastMarker.setMap(null);
+              waypoints.pop();
             } else {
-              window.alert("Directions request failed due to " + status);
+              // その他の予期せぬエラーの場合
+              window.alert(
+                "ルート検索中に予期せぬエラーが発生しました。 Status: " + status
+              );
             }
           }
         );
