@@ -3,6 +3,9 @@
   <head>
     <title>自転車旅行プランナー</title>
     <style>
+      body {
+        font-family: sans-serif;
+      }
       #map {
         height: 500px;
         width: 100%;
@@ -10,84 +13,409 @@
       #info {
         margin-top: 10px;
       }
+      .spot-marker-icon {
+        width: 18px;
+        height: 18px;
+        background-color: #f44336;
+        border-radius: 50%;
+        border: 2px solid white;
+        box-shadow: 0 0 5px rgba(0, 0, 0, 0.5);
+      }
+      #preview-modal {
+        display: none;
+        position: fixed;
+        z-index: 1000;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.7);
+        justify-content: center;
+        align-items: center;
+      }
+      #preview-container {
+        width: 80%;
+        height: 80%;
+        background-color: #1a1a1a;
+        border-radius: 10px;
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.5);
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+      }
+      #preview-image-container {
+        flex-grow: 1;
+        background-color: black;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+      }
+      #preview-image {
+        max-width: 100%;
+        max-height: 100%;
+        object-fit: contain;
+      }
+      #preview-controls {
+        padding: 15px;
+        background-color: #222;
+        color: white;
+        text-align: center;
+        display: flex;
+        align-items: center;
+      }
+      #progress-bar-container {
+        flex-grow: 1;
+        height: 10px;
+        background-color: #444;
+        border-radius: 5px;
+        margin: 0 15px;
+        overflow: hidden;
+      }
+      #progress-bar {
+        width: 0%;
+        height: 100%;
+        background-color: #00bcd4;
+        transition: width 0.1s linear;
+      }
+      #close-preview {
+        padding: 8px 15px;
+        border: none;
+        background-color: #f44336;
+        color: white;
+        border-radius: 5px;
+        cursor: pointer;
+      }
+      .plan-inputs {
+        margin-top: 15px;
+        margin-bottom: 10px;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+      .plan-inputs textarea {
+        width: 98%;
+        padding: 8px;
+        font-size: 14px;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+      }
+      #plan-details-container {
+        margin-top: 15px;
+        padding: 15px;
+        background-color: #f9f9f9;
+        border: 1px solid #ddd;
+        border-radius: 5px;
+        display: none;
+      }
+      #plan-details-container h3 {
+        margin-top: 0;
+      }
+      .details-box {
+        white-space: pre-wrap;
+        background-color: white;
+        padding: 10px;
+        border-radius: 3px;
+        border: 1px solid #eee;
+        word-wrap: break-word;
+      }
+      .details-box a {
+        color: #007bff;
+        text-decoration: underline;
+      }
     </style>
   </head>
   <body>
     <h1>自転車旅行プランナー</h1>
     <p>地図をクリックして、出発地、経由地、目的地を追加してください。</p>
-    <div id="map"></div>
-    <div id="info">
-      <p>総距離: <span id="distance">0</span> km</p>
-      <p>総所要時間: <span id="duration">0</span> 分</p>
+    <div id="controls-panel" style="margin-bottom: 10px">
+      <strong>地図表示:</strong>
+      <button id="toggle-bicycle-layer">自転車レーンON/OFF</button>
+      <button id="toggle-terrain-map">地形マップ</button>
+      <button id="toggle-roadmap">通常の地図</button>
+      <br />
+      <strong>周辺を検索:</strong>
+      <!-- Place Type -->
+      <!-- https://developers.google.com/maps/documentation/places/web-service/place-types?hl=ja -->
+      <button class="spot-search-btn" data-type="supermarket">スーパー</button>
+      <button class="spot-search-btn" data-type="convenience_store">
+        コンビニ
+      </button>
+      <button class="spot-search-btn" data-type="tourist_attraction">
+        名所
+      </button>
+      <button class="spot-search-btn" data-type="park">公園</button>
+      <button class="spot-search-btn" data-type="bicycle_store">
+        自転車店
+      </button>
+      <button id="clear-spots-btn">スポットを消去</button>
     </div>
-    <button id="saveButton">このルートを保存</button>
+    <div id="map-container" style="display: flex">
+      <div id="map" style="height: 500px; width: 70%"></div>
+      <div id="pano" style="height: 500px; width: 30%"></div>
+    </div>
+    <div id="info">
+      <!-- ★ 修正 ★ ルートの種類を表示するエリアを追加 -->
+      <p>
+        総距離: <span id="distance">0</span> km | 総所要時間:
+        <span id="duration">0</span> 分 |
+        <span id="route-mode" style="font-weight: bold"></span>
+      </p>
+      <button id="route-preview-btn" disabled>
+        ルートを動画風にプレビュー
+      </button>
+    </div>
+    <div
+      id="elevation-chart-container"
+      style="width: 100%; height: 150px; margin-top: 10px"
+    >
+      <canvas id="elevation-chart"></canvas>
+    </div>
 
+    <div class="plan-inputs">
+      <textarea
+        id="plan-memo"
+        rows="3"
+        placeholder="この旅行プランに関するメモ（持ち物、注意点など）"
+      ></textarea>
+      <textarea
+        id="plan-urls-info"
+        rows="3"
+        placeholder="参考URLや関連情報（改行で複数入力できます）"
+      ></textarea>
+    </div>
+
+    <button id="saveButton">このルートを保存</button>
     <hr />
     <div id="saved-plans-container">
       <h2>保存したプラン</h2>
-      <ul id="plan-list">
-        <!-- ここにJavaScriptでプランが追加されます -->
-      </ul>
+      <ul id="plan-list"></ul>
     </div>
 
-    <script>
-      let map;
-      let directionsService;
-      let directionsRenderer;
-      const waypoints = []; // 経由地を格納する配列
-      const markers = []; // マーカーを格納する配列
+    <div id="plan-details-container">
+      <h3 id="plan-details-title"></h3>
+      <p><strong>参考URL・情報:</strong></p>
+      <div id="plan-details-urls-info" class="details-box"></div>
+      <p><strong>メモ:</strong></p>
+      <pre id="plan-details-memo" class="details-box"></pre>
+    </div>
 
+    <div id="preview-modal">
+      <div id="preview-container">
+        <div id="preview-image-container">
+          <img id="preview-image" src="" alt="Street View Preview" />
+        </div>
+        <div id="preview-controls">
+          <span>プレビュー中...</span>
+          <div id="progress-bar-container"><div id="progress-bar"></div></div>
+          <button id="close-preview">閉じる</button>
+        </div>
+      </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+      let map,
+        pano,
+        directionsService,
+        directionsRenderer,
+        elevationService,
+        placesService,
+        streetViewService;
+      const waypoints = [],
+        markers = [],
+        spotMarkers = [];
+      let elevationChart = null,
+        bicyclingLayer,
+        previewInterval = null,
+        previewPoints = [],
+        currentPreviewIndex = 0;
+      const MAX_WAYPOINTS = 25;
       const API_BASE_URL = "__API_BASE_URL__";
 
-      function initMap() {
+      async function initMap() {
         directionsService = new google.maps.DirectionsService();
-        directionsRenderer = new google.maps.DirectionsRenderer();
-
+        elevationService = new google.maps.ElevationService();
+        streetViewService = new google.maps.StreetViewService();
         map = new google.maps.Map(document.getElementById("map"), {
-          center: { lat: 35.681236, lng: 139.767125 }, // 東京駅周辺
+          center: { lat: 35.681236, lng: 139.767125 },
           zoom: 12,
+          mapId: "BICYCLE_TRIP_PLANNER_MAP_ID",
         });
-        directionsRenderer.setMap(map);
-
-        // 地図クリックイベント
+        directionsRenderer = new google.maps.DirectionsRenderer({
+          draggable: true,
+          map: map,
+        });
+        placesService = new google.maps.places.PlacesService(map);
+        bicyclingLayer = new google.maps.BicyclingLayer();
+        pano = new google.maps.StreetViewPanorama(
+          document.getElementById("pano")
+        );
+        map.setStreetView(pano);
+        updateStreetView(map.getCenter());
         map.addListener("click", (event) => {
+          if (event.placeId) event.stop();
           addWaypoint(event.latLng);
         });
-
+        document
+          .getElementById("toggle-bicycle-layer")
+          .addEventListener("click", () =>
+            bicyclingLayer.setMap(bicyclingLayer.getMap() ? null : map)
+          );
+        document
+          .getElementById("toggle-terrain-map")
+          .addEventListener("click", () => map.setMapTypeId("terrain"));
+        document
+          .getElementById("toggle-roadmap")
+          .addEventListener("click", () => map.setMapTypeId("roadmap"));
+        document
+          .querySelectorAll(".spot-search-btn")
+          .forEach((button) =>
+            button.addEventListener("click", () =>
+              searchSpots(button.dataset.type)
+            )
+          );
+        document
+          .getElementById("clear-spots-btn")
+          .addEventListener("click", clearSpotMarkers);
+        directionsRenderer.addListener("directions_changed", () => {
+          const result = directionsRenderer.getDirections();
+          document.getElementById("route-preview-btn").disabled = !(
+            result &&
+            result.routes &&
+            result.routes.length > 0
+          );
+          if (result && result.routes && result.routes.length > 0) {
+            // ★ 修正 ★ ドラッグで変更した場合もルートの種類がわかるようにする
+            const travelMode = result.request.travelMode;
+            updateRouteUI(result, travelMode);
+          }
+        });
+        document
+          .getElementById("route-preview-btn")
+          .addEventListener("click", startRoutePreview);
+        document
+          .getElementById("close-preview")
+          .addEventListener("click", stopRoutePreview);
         loadSavedPlans();
       }
 
-      // 保存されたプランの一覧をサーバーから読み込む関数
+      // ★ 修正 ★ travelMode引数を追加
+      function updateRouteUI(response, travelMode) {
+        const route = response.routes[0];
+        const totalDistance = route.legs.reduce(
+          (sum, leg) => sum + leg.distance.value,
+          0
+        );
+        const totalDuration = route.legs.reduce(
+          (sum, leg) => sum + leg.duration.value,
+          0
+        );
+        document.getElementById("distance").textContent = (
+          totalDistance / 1000
+        ).toFixed(2);
+        document.getElementById("duration").textContent = Math.round(
+          totalDuration / 60
+        );
+
+        // ★ 修正 ★ ルートの種類を表示
+        const modeText = document.getElementById("route-mode");
+        if (travelMode === "BICYCLING") {
+          modeText.textContent = "自転車ルート";
+          modeText.style.color = "green";
+        } else {
+          modeText.textContent = "車ルート (参考)";
+          modeText.style.color = "#E67E22"; // オレンジ色
+        }
+
+        drawElevationChart(response);
+      }
+
+      function searchSpots(type) {
+        clearSpotMarkers();
+        const searchCenter =
+          waypoints.length > 0
+            ? waypoints[waypoints.length - 1].location
+            : map.getCenter();
+        const request = { location: searchCenter, radius: 5000, type: type };
+        placesService.nearbySearch(request, (results, status) => {
+          if (status === google.maps.places.PlacesServiceStatus.OK && results) {
+            results.forEach(createSpotMarker);
+          } else if (
+            status === google.maps.places.PlacesServiceStatus.ZERO_RESULTS
+          ) {
+            alert(
+              "指定された場所の周辺(5km)では、該当するスポットが見つかりませんでした。"
+            );
+          } else if (
+            status === google.maps.places.PlacesServiceStatus.REQUEST_DENIED
+          ) {
+            alert(
+              "検索リクエストが拒否されました。\nGCPプロジェクトで「課金」が有効になっているか確認してください。"
+            );
+          } else {
+            console.error("PlacesService failed with status: " + status);
+          }
+        });
+      }
+
+      async function createSpotMarker(place) {
+        const { AdvancedMarkerElement } = await google.maps.importLibrary(
+          "marker"
+        );
+        const icon = document.createElement("div");
+        icon.className = "spot-marker-icon";
+        const marker = new AdvancedMarkerElement({
+          map: map,
+          position: place.geometry.location,
+          title: place.name,
+          content: icon,
+        });
+        spotMarkers.push(marker);
+        const infowindow = new google.maps.InfoWindow({
+          content: `<strong>${place.name}</strong><br>${place.vicinity}`,
+        });
+        marker.addListener("click", () => infowindow.open(map, marker));
+      }
+
+      function clearSpotMarkers() {
+        spotMarkers.forEach((marker) => (marker.map = null));
+        spotMarkers.length = 0;
+      }
+
+      function updateStreetView(location) {
+        streetViewService.getPanorama(
+          { location: location, radius: 50 },
+          (data, status) => {
+            pano.setVisible(status === "OK");
+            if (status === "OK") pano.setPosition(data.location.latLng);
+          }
+        );
+      }
+
+      function linkify(text) {
+        if (!text) return "";
+        const urlRegex =
+          /(\b(https?|ftp|file):\/\/[-A-Z0-9+&@#\/%?=~_|!:,.;]*[-A-Z0-9+&@#\/%=~_|])/gi;
+        const escapedText = text
+          .replace(/&/g, "&")
+          .replace(/</g, "<")
+          .replace(/>/g, ">");
+        return escapedText.replace(urlRegex, function (url) {
+          return `<a href="${url}" target="_blank" rel="noopener noreferrer">${url}</a>`;
+        });
+      }
+
       async function loadSavedPlans() {
         try {
           const response = await fetch(`${API_BASE_URL}/api/plans`);
-          if (!response.ok) {
-            throw new Error("プランの読み込みに失敗しました。");
-          }
+          if (!response.ok) throw new Error("プランの読み込みに失敗しました。");
           const plans = await response.json();
           const planList = document.getElementById("plan-list");
-          planList.innerHTML = ""; // 一覧をクリア
-
+          planList.innerHTML = "";
           plans.forEach((plan) => {
             const li = document.createElement("li");
-            li.dataset.id = plan.id; // クリック時に使うため、IDをdata属性に保存
-
-            // プラン名を表示
-            const planNameSpan = document.createElement("span");
-            planNameSpan.textContent = plan.name;
-            planNameSpan.className = "plan-name";
-            planNameSpan.style.cursor = "pointer"; // クリックできる見た目にする
-            planNameSpan.style.textDecoration = "underline";
-            planNameSpan.style.marginRight = "15px"; // 少しスペースを空ける
-
-            // 削除ボタンを作成
-            const deleteButton = document.createElement("button");
-            deleteButton.textContent = "削除";
-            deleteButton.className = "delete-btn";
-
-            li.appendChild(planNameSpan);
-            li.appendChild(deleteButton);
-
+            li.dataset.id = plan.id;
+            li.innerHTML = `<span class="plan-name" style="cursor: pointer; text-decoration: underline; margin-right: 15px;">${plan.name}</span><button class="delete-btn">削除</button>`;
             planList.appendChild(li);
           });
         } catch (error) {
@@ -96,7 +424,6 @@
         }
       }
 
-      // プラン一覧がクリックされたときの処理
       document
         .getElementById("plan-list")
         .addEventListener("click", async (event) => {
@@ -105,53 +432,71 @@
           if (!li) return;
           const planId = li.dataset.id;
           const planName = li.querySelector(".plan-name").textContent;
-
-          // 削除ボタンがクリックされた場合
           if (target.classList.contains("delete-btn")) {
-            if (confirm(`本当に「${planName}」を削除しますか？`)) {
-              try {
-                const response = await fetch(
-                  `${API_BASE_URL}/api/plans/${planId}`,
-                  { method: "DELETE" }
-                );
-                if (!response.ok) {
-                  throw new Error("プランの削除に失敗しました。");
-                }
+            if (!confirm(`本当に「${planName}」を削除しますか？`)) return;
+            try {
+              const response = await fetch(
+                `${API_BASE_URL}/api/plans/${planId}`,
+                { method: "DELETE" }
+              );
+              if (response.ok) {
                 alert("プランが削除されました。");
-                loadSavedPlans(); // 削除後に一覧を再読み込み
-              } catch (error) {
-                console.error(error);
-                alert(error.message);
+                if (
+                  document.getElementById("plan-details-title").textContent ===
+                  planName
+                ) {
+                  document.getElementById(
+                    "plan-details-container"
+                  ).style.display = "none";
+                  document.getElementById("plan-memo").value = "";
+                  document.getElementById("plan-urls-info").value = "";
+                }
+                loadSavedPlans();
+              } else {
+                throw new Error("プランの削除に失敗しました。");
               }
+            } catch (error) {
+              console.error(error);
+              alert(error.message);
             }
-          }
-          // クリックされたのがLI要素の場合のみ処理
-          else if (event.classList.contains("plan-name")) {
+          } else if (target.classList.contains("plan-name")) {
             try {
               const response = await fetch(
                 `${API_BASE_URL}/api/plans/${planId}`
               );
-              if (!response.ok) {
+              if (!response.ok)
                 throw new Error("プラン詳細の読み込みに失敗しました。");
-              }
               const planDetails = await response.json();
-
-              // 地図をクリア
               waypoints.length = 0;
-              markers.forEach((marker) => marker.setMap(null));
+              markers.forEach((marker) => (marker.map = null));
               markers.length = 0;
-              directionsRenderer.setDirections({ routes: [] });
-
-              // 取得したデータからウェイポイントを復元
-              planDetails.waypoints.forEach((wp) => {
-                const location = new google.maps.LatLng(wp.lat, wp.lng);
-                waypoints.push({ location: location, stopover: true });
-              });
-
-              // ルートを再描画
-              if (waypoints.length >= 2) {
-                calculateAndDisplayRoute();
+              planDetails.waypoints.forEach((wp) =>
+                waypoints.push({
+                  location: new google.maps.LatLng(wp.lat, wp.lng),
+                  stopover: true,
+                })
+              );
+              if (waypoints.length >= 2) calculateAndDisplayRoute();
+              const detailsContainer = document.getElementById(
+                "plan-details-container"
+              );
+              document.getElementById("plan-details-title").textContent =
+                planDetails.name;
+              document.getElementById("plan-details-memo").textContent =
+                planDetails.memo || "メモはありません";
+              const urlsContainer = document.getElementById(
+                "plan-details-urls-info"
+              );
+              if (planDetails.urls_info) {
+                urlsContainer.innerHTML = linkify(planDetails.urls_info);
+              } else {
+                urlsContainer.innerHTML = "関連情報はありません";
               }
+              detailsContainer.style.display = "block";
+              document.getElementById("plan-memo").value =
+                planDetails.memo || "";
+              document.getElementById("plan-urls-info").value =
+                planDetails.urls_info || "";
             } catch (error) {
               console.error(error);
               alert(error.message);
@@ -159,76 +504,130 @@
           }
         });
 
-      function addWaypoint(location) {
-        // マーカーを地図に追加
-        const marker = new google.maps.Marker({
+      async function addWaypoint(location) {
+        if (waypoints.length >= MAX_WAYPOINTS) {
+          alert(`設定できる地点の上限（${MAX_WAYPOINTS}地点）に達しました。`);
+          return;
+        }
+        const { AdvancedMarkerElement } = await google.maps.importLibrary(
+          "marker"
+        );
+        const marker = new AdvancedMarkerElement({
           position: location,
           map: map,
         });
         markers.push(marker);
-
-        // 経由地リストに追加
         waypoints.push({ location: location, stopover: true });
-
-        if (waypoints.length >= 2) {
-          calculateAndDisplayRoute();
-        }
+        updateStreetView(location);
+        if (waypoints.length >= 2) calculateAndDisplayRoute();
       }
 
-      function calculateAndDisplayRoute() {
-        const origin = waypoints[0].location;
-        const destination = waypoints[waypoints.length - 1].location;
-        const intermediateWaypoints = waypoints.slice(1, -1);
+      // ★★★ ここが全面的に修正されたルート計算関数です ★★★
+      function calculateAndDisplayRoute(travelMode = "BICYCLING") {
+        if (waypoints.length < 2) return;
 
-        directionsService.route(
-          {
-            origin: origin,
-            destination: destination,
-            waypoints: intermediateWaypoints,
-            optimizeWaypoints: true,
-            travelMode: "BICYCLING", // 自転車モードを指定
-          },
-          (response, status) => {
-            if (status === "OK") {
-              // 既存のクリックマーカーは非表示にする
-              markers.forEach((marker) => marker.setMap(null));
-              directionsRenderer.setDirections(response);
+        const request = {
+          origin: waypoints[0].location,
+          destination: waypoints[waypoints.length - 1].location,
+          waypoints: waypoints.slice(1, -1),
+          optimizeWaypoints: true,
+          travelMode: travelMode,
+        };
 
-              // 距離と時間を計算して表示
-              const route = response.routes[0];
-              let totalDistance = 0;
-              let totalDuration = 0;
-              route.legs.forEach((leg) => {
-                totalDistance += leg.distance.value;
-                totalDuration += leg.duration.value;
-              });
-              document.getElementById("distance").textContent = (
-                totalDistance / 1000
-              ).toFixed(2);
-              document.getElementById("duration").textContent = Math.round(
-                totalDuration / 60
-              );
-            } else if (status === "ZERO_RESULTS") {
-              // ルートが見つからなかった場合、分かりやすいメッセージを表示
-              alert(
-                "選択された地点間を結ぶ有効な自転車ルートが見つかりませんでした。\n海の上や、道路のない場所が指定されていないか確認してください。"
-              );
-
-              // 直前に追加したマーカーとウェイポイントを削除して、ユーザーがやり直せるようにする
-              const lastMarker = markers.pop();
-              if (lastMarker) lastMarker.setMap(null);
-              waypoints.pop();
+        directionsService.route(request, (response, status) => {
+          if (status === "OK") {
+            markers.forEach((marker) => (marker.map = null));
+            markers.length = 0;
+            directionsRenderer.setDirections(response);
+            // UI更新はdirections_changedリスナーに任せる
+          } else if (status === "ZERO_RESULTS") {
+            if (travelMode === "BICYCLING") {
+              // 自転車でダメなら、車で再検索するかユーザーに尋ねる
+              if (
+                confirm(
+                  "自転車ルートが見つかりませんでした。\n代わりに車用のルートを検索しますか？（実際の走行可否は現地で確認してください）"
+                )
+              ) {
+                calculateAndDisplayRoute("DRIVING"); // 車モードで再実行
+              } else {
+                // ユーザーがキャンセルしたら最後のポイントを消す
+                const lastMarker = markers.pop();
+                if (lastMarker) lastMarker.map = null;
+                waypoints.pop();
+              }
             } else {
-              // その他の予期せぬエラーの場合
-              window.alert(
-                "ルート検索中に予期せぬエラーが発生しました。 Status: " + status
+              // 車でもダメなら、最終的なエラー
+              alert(
+                "車用のルートも見つかりませんでした。地点を確認してください。"
               );
+              const lastMarker = markers.pop();
+              if (lastMarker) lastMarker.map = null;
+              waypoints.pop();
             }
+          } else {
+            window.alert("ルート検索エラー: " + status);
+          }
+        });
+      }
+
+      function drawElevationChart(response) {
+        elevationService.getElevationForLocations(
+          { locations: response.routes[0].overview_path },
+          (results, status) => {
+            if (status !== "OK" || !results) {
+              console.error("Elevation service failed due to: " + status);
+              return;
+            }
+            if (elevationChart) elevationChart.destroy();
+            const totalDistance = response.routes[0].legs.reduce(
+              (total, leg) => total + leg.distance.value,
+              0
+            );
+            const chartLabels = results.map(
+              (_, i) =>
+                ((totalDistance / 1000) * (i / (results.length - 1))).toFixed(
+                  1
+                ) + " km"
+            );
+            const ctx = document
+              .getElementById("elevation-chart")
+              .getContext("2d");
+            elevationChart = new Chart(ctx, {
+              type: "line",
+              data: {
+                labels: chartLabels,
+                datasets: [
+                  {
+                    label: "標高 (m)",
+                    data: results.map((r) => r.elevation),
+                    backgroundColor: "rgba(75, 192, 192, 0.2)",
+                    borderColor: "rgba(75, 192, 192, 1)",
+                    borderWidth: 1,
+                    fill: true,
+                  },
+                ],
+              },
+              options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                  legend: { display: false },
+                  tooltip: {
+                    callbacks: {
+                      label: (item) => `標高: ${item.raw.toFixed(1)} m`,
+                    },
+                  },
+                },
+                scales: {
+                  y: { ticks: { beginAtZero: false } },
+                  x: { ticks: { autoSkip: true, maxTicksLimit: 10 } },
+                },
+              },
+            });
           }
         );
       }
 
-      // 保存ボタンのイベントリスナー
       document
         .getElementById("saveButton")
         .addEventListener("click", async () => {
@@ -238,43 +637,83 @@
           }
           const planName = prompt("この旅行プランの名前を入力してください:");
           if (!planName) return;
-
+          const planMemo = document.getElementById("plan-memo").value;
+          const planUrlsInfo = document.getElementById("plan-urls-info").value;
           const routeData = {
             name: planName,
             waypoints: waypoints.map((wp) => ({
               lat: wp.location.lat(),
               lng: wp.location.lng(),
             })),
+            memo: planMemo,
+            urls_info: planUrlsInfo,
             createdAt: new Date(),
           };
-
-          // バックエンドAPIにデータを送信
           try {
             const response = await fetch(`${API_BASE_URL}/api/plans`, {
-              // ここは後で作成するバックエンドのURL
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify(routeData),
             });
             if (response.ok) {
               alert("ルートが保存されました！");
+              document.getElementById("plan-memo").value = "";
+              document.getElementById("plan-urls-info").value = "";
+              loadSavedPlans();
             } else {
-              // サーバーがエラーを返した場合（例: 500エラー）
-              const errorData = await response.json();
-              console.error("Save failed:", errorData);
-              alert("保存に失敗しました。サーバーでエラーが発生しました。");
+              alert("保存に失敗しました。");
             }
           } catch (error) {
-            // 通信自体が失敗した場合（例: CORSエラー、ネットワークエラー）
-            console.error("Error saving route:", error);
-            alert("保存中にエラーが発生しました。通信設定を確認してください。");
+            console.error(error);
+            alert("保存中にエラーが発生しました。");
           }
         });
+
+      function startRoutePreview() {
+        const currentRoute = directionsRenderer.getDirections().routes[0];
+        if (!currentRoute) {
+          alert("プレビューするルートがありません。");
+          return;
+        }
+        previewPoints = currentRoute.overview_path;
+        currentPreviewIndex = 0;
+        const modal = document.getElementById("preview-modal");
+        modal.style.display = "flex";
+        previewInterval = setInterval(showNextPreviewImage, 500);
+        showNextPreviewImage();
+      }
+
+      function stopRoutePreview() {
+        clearInterval(previewInterval);
+        previewInterval = null;
+        document.getElementById("preview-modal").style.display = "none";
+      }
+
+      function showNextPreviewImage() {
+        if (currentPreviewIndex >= previewPoints.length) {
+          stopRoutePreview();
+          return;
+        }
+        const point = previewPoints[currentPreviewIndex];
+        const heading =
+          currentPreviewIndex < previewPoints.length - 1
+            ? google.maps.geometry.spherical.computeHeading(
+                point,
+                previewPoints[currentPreviewIndex + 1]
+              )
+            : 0;
+        const apiKey = "__GOOGLE_MAPS_API_KEY__".replace(/__/g, "");
+        const imageUrl = `https://maps.googleapis.com/maps/api/streetview?size=640x480&location=${point.lat()},${point.lng()}&heading=${heading}&pitch=0&fov=90&key=${apiKey}`;
+        document.getElementById("preview-image").src = imageUrl;
+        const progress =
+          (currentPreviewIndex / (previewPoints.length - 1)) * 100;
+        document.getElementById("progress-bar").style.width = `${progress}%`;
+        currentPreviewIndex++;
+      }
     </script>
     <script
       async
-      defer
-      src="https://maps.googleapis.com/maps/api/js?key=__GOOGLE_MAPS_API_KEY__&callback=initMap"
+      src="https://maps.googleapis.com/maps/api/js?key=__GOOGLE_MAPS_API_KEY__&callback=initMap&libraries=places,marker,geometry"
     ></script>
   </body>
 </html>

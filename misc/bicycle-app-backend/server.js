@@ -20,13 +20,17 @@ app.post('/api/plans', async (req, res) => {
     if (!data.name || !data.waypoints) {
       return res.status(400).send('必要なデータが不足しています。');
     }
-    
-    // Firestoreの'plans'コレクションにデータを追加
-    const docRef = await firestore.collection('plans').add({
+
+    // ★★★ Firestoreに保存するデータにmemoとurlを追加 ★★★
+    const planData = {
       name: data.name,
       waypoints: data.waypoints,
+      memo: data.memo || '', // 未入力の場合は空文字を保存
+      urls_info: data.urls_info || '', 
       createdAt: data.createdAt ? new Date(data.createdAt) : new Date(),
-    });
+    };
+
+    const docRef = await firestore.collection('plans').add(planData); // 修正したデータを保存
     
     res.status(201).send({ id: docRef.id, message: 'Plan saved successfully.' });
   } catch (error) {
