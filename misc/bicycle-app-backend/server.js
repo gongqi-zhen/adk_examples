@@ -71,6 +71,23 @@ app.get('/api/plans/:planId', async (req, res) => {
   }
 });
 
+// 特定のプランを削除するAPI
+app.delete('/api/plans/:planId', async (req, res) => {
+  try {
+    const planId = req.params.planId;
+    const docRef = firestore.collection('plans').doc(planId); // ドキュメント参照を取得
+    const doc = await docRef.get();
+    if (!doc.exists) {
+      return res.status(404).send('Plan not found');
+    }
+    await docRef.delete(); // ドキュメントを削除
+    res.status(200).send('Plan deleted successfully');
+  } catch (error) {
+    console.error('Error deleting plan:', error);
+    res.status(500).send('Internal Server Error');
+  }
+}); 
+
 const PORT = process.env.PORT || 8080;
 
 // フロントエンド(index.html)を提供するルート

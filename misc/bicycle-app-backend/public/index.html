@@ -70,10 +70,24 @@
 
           plans.forEach((plan) => {
             const li = document.createElement("li");
-            li.textContent = plan.name;
             li.dataset.id = plan.id; // クリック時に使うため、IDをdata属性に保存
-            li.style.cursor = "pointer"; // クリックできる見た目にする
-            li.style.textDecoration = "underline";
+
+            // プラン名を表示
+            const planNameSpan = document.createElement("span");
+            planNameSpan.textContent = plan.name;
+            planNameSpan.className = "plan-name";
+            planNameSpan.style.cursor = "pointer"; // クリックできる見た目にする
+            planNameSpan.style.textDecoration = "underline";
+            planNameSpan.style.marginRight = "15px"; // 少しスペースを空ける
+
+            // 削除ボタンを作成
+            const deleteButton = document.createElement("button");
+            deleteButton.textContent = "削除";
+            deleteButton.className = "delete-btn";
+
+            li.appendChild(planNameSpan);
+            li.appendChild(deleteButton);
+
             planList.appendChild(li);
           });
         } catch (error) {
@@ -86,9 +100,33 @@
       document
         .getElementById("plan-list")
         .addEventListener("click", async (event) => {
+          const target = event.target;
+          const li = target.closest("li");
+          if (!li) return;
+          const planId = li.dataset.id;
+          const planName = li.querySelector(".plan-name").textContent;
+
+          // 削除ボタンがクリックされた場合
+          if (target.classList.contains("delete-btn")) {
+            if (confirm(`本当に「${planName}」を削除しますか？`)) {
+              try {
+                const response = await fetch(
+                  `${API_BASE_URL}/api/plans/${planId}`,
+                  { method: "DELETE" }
+                );
+                if (!response.ok) {
+                  throw new Error("プランの削除に失敗しました。");
+                }
+                alert("プランが削除されました。");
+                loadSavedPlans(); // 削除後に一覧を再読み込み
+              } catch (error) {
+                console.error(error);
+                alert(error.message);
+              }
+            }
+          }
           // クリックされたのがLI要素の場合のみ処理
-          if (event.target.tagName === "LI") {
-            const planId = event.target.dataset.id;
+          else if (event.classList.contains("plan-name")) {
             try {
               const response = await fetch(
                 `${API_BASE_URL}/api/plans/${planId}`
