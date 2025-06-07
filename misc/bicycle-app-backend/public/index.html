@@ -3,16 +3,181 @@
   <head>
     <title>自転車旅行プランナー</title>
     <style>
+      /* 基本設定 */
+      html,
       body {
-        font-family: sans-serif;
+        height: 100%;
+        margin: 0;
+        padding: 0;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+          "Helvetica Neue", Arial, sans-serif;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden; /* ページ全体のスクロールを禁止 */
+      }
+      button {
+        font-size: 14px;
+        padding: 6px 12px;
+        border-radius: 4px;
+        border: 1px solid #ccc;
+        background-color: #fff;
+        cursor: pointer;
+      }
+      button:hover {
+        background-color: #f0f0f0;
+      }
+      button:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+      hr {
+        border: none;
+        border-top: 1px solid #ddd;
+        margin: 15px 0;
+      }
+
+      /* ヘッダー */
+      #header {
+        padding: 10px 20px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        background-color: white;
+        z-index: 10;
+      }
+      #header h1 {
+        margin: 0 0 5px 0;
+        font-size: 24px;
+      }
+      #header p {
+        margin: 0;
+        color: #555;
+      }
+
+      /* メインコンテンツエリア */
+      #main-container {
+        display: flex;
+        flex-grow: 1;
+        overflow: hidden;
+      }
+
+      /* 左パネル (地図 + 情報バー) */
+      #left-panel {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        position: relative;
+        background-color: #e8e8e8;
+      }
+      #map-container {
+        flex-grow: 1;
       }
       #map {
-        height: 500px;
         width: 100%;
+        height: 100%;
       }
-      #info {
-        margin-top: 10px;
+      #info-bar {
+        padding: 10px 20px;
+        background: #f8f9fa;
+        border-top: 1px solid #ddd;
+        font-size: 14px;
       }
+      #info-bar p {
+        margin: 0;
+      }
+      #elevation-chart-container {
+        height: 160px;
+        padding: 10px;
+        box-sizing: border-box;
+        background: white;
+        border-top: 1px solid #ddd;
+      }
+
+      /* 右パネル (サイドバー) */
+      #right-panel {
+        width: 30%;
+        max-width: 450px;
+        min-width: 320px;
+        display: flex;
+        flex-direction: column;
+        border-left: 1px solid #ddd;
+        transition: transform 0.3s ease, min-width 0.3s ease, width 0.3s ease;
+        background-color: white;
+      }
+      #pano-container {
+        height: 35%;
+        min-height: 200px;
+        background-color: #eee;
+        border-bottom: 1px solid #ddd;
+      }
+      #pano {
+        width: 100%;
+        height: 100%;
+      }
+      #sidebar-content {
+        flex-grow: 1;
+        padding: 15px;
+        overflow-y: auto;
+      }
+
+      /* サイドバートグルボタン */
+      #toggle-sidebar-btn {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        z-index: 5;
+        width: 30px;
+        height: 30px;
+        background-color: white;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+        cursor: pointer;
+        font-size: 18px;
+        line-height: 28px;
+        padding: 0;
+        text-align: center;
+        box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+      }
+      .sidebar-collapsed #right-panel {
+        transform: translateX(100%);
+        min-width: 0;
+        width: 0;
+        border-left: none;
+      }
+
+      /* パルスマーカー */
+      @keyframes pulse {
+        0% {
+          transform: scale(0.1);
+          opacity: 0.8;
+        }
+        70% {
+          transform: scale(1);
+          opacity: 0.2;
+        }
+        100% {
+          transform: scale(1.2);
+          opacity: 0;
+        }
+      }
+      .hover-marker-container {
+        width: 16px;
+        height: 16px;
+        border-radius: 50%;
+        background-color: #00bcd4;
+        border: 2px solid white;
+        box-shadow: 0 0 5px rgba(0, 0, 0, 0.5);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+      }
+      .hover-marker-pulse {
+        width: 100%;
+        height: 100%;
+        border-radius: 50%;
+        background-color: #00bcd4;
+        animation: pulse 1.5s infinite ease-out;
+      }
+
+      /* その他UI要素 */
       .spot-marker-icon {
         width: 18px;
         height: 18px;
@@ -21,6 +186,66 @@
         border: 2px solid white;
         box-shadow: 0 0 5px rgba(0, 0, 0, 0.5);
       }
+      .plan-inputs {
+        margin-top: 15px;
+        margin-bottom: 10px;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+      .plan-inputs textarea {
+        width: 98%;
+        padding: 8px;
+        font-size: 14px;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        resize: vertical;
+      }
+      #plan-details-container {
+        margin-top: 15px;
+        padding: 15px;
+        background-color: #f9f9f9;
+        border: 1px solid #ddd;
+        border-radius: 5px;
+        display: none;
+      }
+      #plan-details-container h3 {
+        margin-top: 0;
+      }
+      .details-box {
+        white-space: pre-wrap;
+        background-color: white;
+        padding: 10px;
+        border-radius: 3px;
+        border: 1px solid #eee;
+        word-wrap: break-word;
+      }
+      .details-box a {
+        color: #007bff;
+        text-decoration: underline;
+      }
+      .elevation-marker-content {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 28px;
+        height: 28px;
+        border-radius: 50%;
+        background-color: white;
+        border: 2px solid;
+        font-weight: bold;
+        font-size: 16px;
+      }
+      .elevation-max {
+        border-color: #c0392b;
+        color: #c0392b;
+      }
+      .elevation-min {
+        border-color: #2980b9;
+        color: #2980b9;
+      }
+
+      /* プレビューモーダル */
       #preview-modal {
         display: none;
         position: fixed;
@@ -85,118 +310,92 @@
         border-radius: 5px;
         cursor: pointer;
       }
-      .plan-inputs {
-        margin-top: 15px;
-        margin-bottom: 10px;
-        display: flex;
-        flex-direction: column;
-        gap: 10px;
-      }
-      .plan-inputs textarea {
-        width: 98%;
-        padding: 8px;
-        font-size: 14px;
-        border: 1px solid #ccc;
-        border-radius: 4px;
-      }
-      #plan-details-container {
-        margin-top: 15px;
-        padding: 15px;
-        background-color: #f9f9f9;
-        border: 1px solid #ddd;
-        border-radius: 5px;
-        display: none;
-      }
-      #plan-details-container h3 {
-        margin-top: 0;
-      }
-      .details-box {
-        white-space: pre-wrap;
-        background-color: white;
-        padding: 10px;
-        border-radius: 3px;
-        border: 1px solid #eee;
-        word-wrap: break-word;
-      }
-      .details-box a {
-        color: #007bff;
-        text-decoration: underline;
-      }
     </style>
   </head>
   <body>
-    <h1>自転車旅行プランナー</h1>
-    <p>地図をクリックして、出発地、経由地、目的地を追加してください。</p>
-    <div id="controls-panel" style="margin-bottom: 10px">
-      <strong>地図表示:</strong>
-      <button id="toggle-bicycle-layer">自転車レーンON/OFF</button>
-      <button id="toggle-terrain-map">地形マップ</button>
-      <button id="toggle-roadmap">通常の地図</button>
-      <br />
-      <strong>周辺を検索:</strong>
-      <!-- Place Type -->
-      <!-- https://developers.google.com/maps/documentation/places/web-service/place-types?hl=ja -->
-      <button class="spot-search-btn" data-type="supermarket">スーパー</button>
-      <button class="spot-search-btn" data-type="convenience_store">
-        コンビニ
-      </button>
-      <button class="spot-search-btn" data-type="tourist_attraction">
-        名所
-      </button>
-      <button class="spot-search-btn" data-type="park">公園</button>
-      <button class="spot-search-btn" data-type="bicycle_store">
-        自転車店
-      </button>
-      <button id="clear-spots-btn">スポットを消去</button>
-    </div>
-    <div id="map-container" style="display: flex">
-      <div id="map" style="height: 500px; width: 70%"></div>
-      <div id="pano" style="height: 500px; width: 30%"></div>
-    </div>
-    <div id="info">
-      <!-- ★ 修正 ★ ルートの種類を表示するエリアを追加 -->
-      <p>
-        総距離: <span id="distance">0</span> km | 総所要時間:
-        <span id="duration">0</span> 分 |
-        <span id="route-mode" style="font-weight: bold"></span>
-      </p>
-      <button id="route-preview-btn" disabled>
-        ルートを動画風にプレビュー
-      </button>
-    </div>
-    <div
-      id="elevation-chart-container"
-      style="width: 100%; height: 150px; margin-top: 10px"
-    >
-      <canvas id="elevation-chart"></canvas>
+    <div id="header">
+      <h1>自転車旅行プランナー</h1>
+      <p>地図をクリックして、出発地、経由地、目的地を追加してください。</p>
     </div>
 
-    <div class="plan-inputs">
-      <textarea
-        id="plan-memo"
-        rows="3"
-        placeholder="この旅行プランに関するメモ（持ち物、注意点など）"
-      ></textarea>
-      <textarea
-        id="plan-urls-info"
-        rows="3"
-        placeholder="参考URLや関連情報（改行で複数入力できます）"
-      ></textarea>
-    </div>
-
-    <button id="saveButton">このルートを保存</button>
-    <hr />
-    <div id="saved-plans-container">
-      <h2>保存したプラン</h2>
-      <ul id="plan-list"></ul>
-    </div>
-
-    <div id="plan-details-container">
-      <h3 id="plan-details-title"></h3>
-      <p><strong>参考URL・情報:</strong></p>
-      <div id="plan-details-urls-info" class="details-box"></div>
-      <p><strong>メモ:</strong></p>
-      <pre id="plan-details-memo" class="details-box"></pre>
+    <div id="main-container">
+      <div id="left-panel">
+        <button id="toggle-sidebar-btn">◀</button>
+        <div id="map-container"><div id="map"></div></div>
+        <div id="info-bar">
+          <p>
+            総距離: <span id="distance">0</span> km | 総所要時間:
+            <span id="duration">0</span> 分 |
+            <span id="route-mode" style="font-weight: bold"></span>
+          </p>
+        </div>
+        <div id="elevation-chart-container">
+          <canvas id="elevation-chart"></canvas>
+        </div>
+      </div>
+      <div id="right-panel">
+        <div id="pano-container"><div id="pano"></div></div>
+        <div id="sidebar-content">
+          <div id="controls-panel" style="margin-bottom: 15px">
+            <strong>地図表示:</strong>
+            <button id="toggle-bicycle-layer">自転車レーン</button>
+            <button id="toggle-terrain-map">地形マップ</button>
+            <button id="toggle-roadmap">通常地図</button>
+            <br /><br />
+            <strong>周辺を検索:</strong>
+            <!-- Place Type -->
+            <!-- https://developers.google.com/maps/documentation/places/web-service/place-types?hl=ja -->
+            <button class="spot-search-btn" data-type="supermarket">
+              スーパー
+            </button>
+            <button class="spot-search-btn" data-type="convenience_store">
+              コンビニ
+            </button>
+            <button class="spot-search-btn" data-type="tourist_attraction">
+              名所
+            </button>
+            <button class="spot-search-btn" data-type="park">公園</button>
+            <button class="spot-search-btn" data-type="bicycle_store">
+              自転車店
+            </button>
+            <button id="clear-spots-btn">スポット消去</button>
+          </div>
+          <button
+            id="route-preview-btn"
+            disabled
+            style="width: 100%; padding: 10px; margin-bottom: 15px"
+          >
+            ルートを動画風にプレビュー
+          </button>
+          <div class="plan-inputs">
+            <textarea
+              id="plan-memo"
+              rows="3"
+              placeholder="この旅行プランに関するメモ"
+            ></textarea>
+            <textarea
+              id="plan-urls-info"
+              rows="3"
+              placeholder="参考URLや関連情報"
+            ></textarea>
+          </div>
+          <button id="saveButton" style="width: 100%; padding: 10px">
+            このルートを保存
+          </button>
+          <hr />
+          <div id="saved-plans-container">
+            <h2>保存したプラン</h2>
+            <ul id="plan-list"></ul>
+          </div>
+          <div id="plan-details-container">
+            <h3 id="plan-details-title"></h3>
+            <p><strong>参考URL・情報:</strong></p>
+            <div id="plan-details-urls-info" class="details-box"></div>
+            <p><strong>メモ:</strong></p>
+            <pre id="plan-details-memo" class="details-box"></pre>
+          </div>
+        </div>
+      </div>
     </div>
 
     <div id="preview-modal">
@@ -229,10 +428,19 @@
         previewInterval = null,
         previewPoints = [],
         currentPreviewIndex = 0;
+      let currentRoutePath = [],
+        hoverMarker = null;
+      const elevationPointMarkers = [];
+
+      let AdvancedMarkerElement;
+
       const MAX_WAYPOINTS = 25;
       const API_BASE_URL = "__API_BASE_URL__";
 
       async function initMap() {
+        ({ AdvancedMarkerElement } = await google.maps.importLibrary("marker"));
+        window.AdvancedMarkerElement = AdvancedMarkerElement;
+
         directionsService = new google.maps.DirectionsService();
         elevationService = new google.maps.ElevationService();
         streetViewService = new google.maps.StreetViewService();
@@ -240,10 +448,15 @@
           center: { lat: 35.681236, lng: 139.767125 },
           zoom: 12,
           mapId: "BICYCLE_TRIP_PLANNER_MAP_ID",
+          mapTypeControl: false,
+          streetViewControl: false,
+          zoomControl: false,
+          fullscreenControl: false,
         });
         directionsRenderer = new google.maps.DirectionsRenderer({
           draggable: true,
           map: map,
+          suppressMarkers: true,
         });
         placesService = new google.maps.places.PlacesService(map);
         bicyclingLayer = new google.maps.BicyclingLayer();
@@ -252,10 +465,12 @@
         );
         map.setStreetView(pano);
         updateStreetView(map.getCenter());
+
         map.addListener("click", (event) => {
           if (event.placeId) event.stop();
           addWaypoint(event.latLng);
         });
+
         document
           .getElementById("toggle-bicycle-layer")
           .addEventListener("click", () =>
@@ -277,6 +492,7 @@
         document
           .getElementById("clear-spots-btn")
           .addEventListener("click", clearSpotMarkers);
+
         directionsRenderer.addListener("directions_changed", () => {
           const result = directionsRenderer.getDirections();
           document.getElementById("route-preview-btn").disabled = !(
@@ -285,21 +501,40 @@
             result.routes.length > 0
           );
           if (result && result.routes && result.routes.length > 0) {
-            // ★ 修正 ★ ドラッグで変更した場合もルートの種類がわかるようにする
-            const travelMode = result.request.travelMode;
-            updateRouteUI(result, travelMode);
+            updateRouteUI(result, result.request.travelMode);
           }
         });
+
         document
           .getElementById("route-preview-btn")
           .addEventListener("click", startRoutePreview);
         document
           .getElementById("close-preview")
           .addEventListener("click", stopRoutePreview);
+
+        document
+          .getElementById("elevation-chart")
+          .addEventListener("mouseout", () => {
+            if (hoverMarker) {
+              hoverMarker.map = null;
+            }
+          });
+
+        const mainContainer = document.getElementById("main-container");
+        const toggleBtn = document.getElementById("toggle-sidebar-btn");
+        toggleBtn.addEventListener("click", () => {
+          mainContainer.classList.toggle("sidebar-collapsed");
+          toggleBtn.textContent = mainContainer.classList.contains(
+            "sidebar-collapsed"
+          )
+            ? "▶"
+            : "◀";
+          google.maps.event.trigger(map, "resize");
+        });
+
         loadSavedPlans();
       }
 
-      // ★ 修正 ★ travelMode引数を追加
       function updateRouteUI(response, travelMode) {
         const route = response.routes[0];
         const totalDistance = route.legs.reduce(
@@ -316,17 +551,14 @@
         document.getElementById("duration").textContent = Math.round(
           totalDuration / 60
         );
-
-        // ★ 修正 ★ ルートの種類を表示
         const modeText = document.getElementById("route-mode");
         if (travelMode === "BICYCLING") {
           modeText.textContent = "自転車ルート";
           modeText.style.color = "green";
         } else {
           modeText.textContent = "車ルート (参考)";
-          modeText.style.color = "#E67E22"; // オレンジ色
+          modeText.style.color = "#E67E22";
         }
-
         drawElevationChart(response);
       }
 
@@ -358,13 +590,10 @@
         });
       }
 
-      async function createSpotMarker(place) {
-        const { AdvancedMarkerElement } = await google.maps.importLibrary(
-          "marker"
-        );
+      function createSpotMarker(place) {
         const icon = document.createElement("div");
         icon.className = "spot-marker-icon";
-        const marker = new AdvancedMarkerElement({
+        const marker = new window.AdvancedMarkerElement({
           map: map,
           position: place.geometry.location,
           title: place.name,
@@ -504,15 +733,12 @@
           }
         });
 
-      async function addWaypoint(location) {
+      function addWaypoint(location) {
         if (waypoints.length >= MAX_WAYPOINTS) {
           alert(`設定できる地点の上限（${MAX_WAYPOINTS}地点）に達しました。`);
           return;
         }
-        const { AdvancedMarkerElement } = await google.maps.importLibrary(
-          "marker"
-        );
-        const marker = new AdvancedMarkerElement({
+        const marker = new window.AdvancedMarkerElement({
           position: location,
           map: map,
         });
@@ -522,10 +748,8 @@
         if (waypoints.length >= 2) calculateAndDisplayRoute();
       }
 
-      // ★★★ ここが全面的に修正されたルート計算関数です ★★★
       function calculateAndDisplayRoute(travelMode = "BICYCLING") {
         if (waypoints.length < 2) return;
-
         const request = {
           origin: waypoints[0].location,
           destination: waypoints[waypoints.length - 1].location,
@@ -533,30 +757,25 @@
           optimizeWaypoints: true,
           travelMode: travelMode,
         };
-
         directionsService.route(request, (response, status) => {
           if (status === "OK") {
             markers.forEach((marker) => (marker.map = null));
             markers.length = 0;
             directionsRenderer.setDirections(response);
-            // UI更新はdirections_changedリスナーに任せる
           } else if (status === "ZERO_RESULTS") {
             if (travelMode === "BICYCLING") {
-              // 自転車でダメなら、車で再検索するかユーザーに尋ねる
               if (
                 confirm(
                   "自転車ルートが見つかりませんでした。\n代わりに車用のルートを検索しますか？（実際の走行可否は現地で確認してください）"
                 )
               ) {
-                calculateAndDisplayRoute("DRIVING"); // 車モードで再実行
+                calculateAndDisplayRoute("DRIVING");
               } else {
-                // ユーザーがキャンセルしたら最後のポイントを消す
                 const lastMarker = markers.pop();
                 if (lastMarker) lastMarker.map = null;
                 waypoints.pop();
               }
             } else {
-              // 車でもダメなら、最終的なエラー
               alert(
                 "車用のルートも見つかりませんでした。地点を確認してください。"
               );
@@ -571,27 +790,52 @@
       }
 
       function drawElevationChart(response) {
+        const path = response.routes[0].overview_path;
+        currentRoutePath = path;
+        if (hoverMarker) hoverMarker.map = null;
+        elevationPointMarkers.forEach((m) => (m.map = null));
+        elevationPointMarkers.length = 0;
         elevationService.getElevationForLocations(
-          { locations: response.routes[0].overview_path },
+          { locations: path },
           (results, status) => {
             if (status !== "OK" || !results) {
               console.error("Elevation service failed due to: " + status);
               return;
             }
             if (elevationChart) elevationChart.destroy();
+            const elevationData = results.map((r) => r.elevation);
+            const maxElevation = Math.max(...elevationData);
+            const minElevation = Math.min(...elevationData);
+            const maxIndex = elevationData.indexOf(maxElevation);
+            const minIndex = elevationData.indexOf(minElevation);
+            createElevationPointMarker(
+              path[maxIndex],
+              "▲",
+              "elevation-max",
+              `最高地点: ${maxElevation.toFixed(0)}m`
+            );
+            createElevationPointMarker(
+              path[minIndex],
+              "▼",
+              "elevation-min",
+              `最低地点: ${minElevation.toFixed(0)}m`
+            );
             const totalDistance = response.routes[0].legs.reduce(
               (total, leg) => total + leg.distance.value,
               0
             );
             const chartLabels = results.map(
               (_, i) =>
-                ((totalDistance / 1000) * (i / (results.length - 1))).toFixed(
-                  1
-                ) + " km"
+                ((totalDistance / 1000) * (i / (path.length - 1))).toFixed(1) +
+                " km"
             );
             const ctx = document
               .getElementById("elevation-chart")
               .getContext("2d");
+            const gradient = ctx.createLinearGradient(0, 0, 0, 150);
+            gradient.addColorStop(0, "rgba(231, 76, 60, 0.5)");
+            gradient.addColorStop(0.5, "rgba(241, 196, 15, 0.5)");
+            gradient.addColorStop(1, "rgba(46, 204, 113, 0.5)");
             elevationChart = new Chart(ctx, {
               type: "line",
               data: {
@@ -599,11 +843,13 @@
                 datasets: [
                   {
                     label: "標高 (m)",
-                    data: results.map((r) => r.elevation),
-                    backgroundColor: "rgba(75, 192, 192, 0.2)",
-                    borderColor: "rgba(75, 192, 192, 1)",
-                    borderWidth: 1,
+                    data: elevationData,
+                    backgroundColor: gradient,
+                    borderColor: "rgba(52, 73, 94, 0.8)",
+                    borderWidth: 2,
                     fill: true,
+                    tension: 0.4,
+                    pointRadius: 0,
                   },
                 ],
               },
@@ -613,6 +859,8 @@
                 plugins: {
                   legend: { display: false },
                   tooltip: {
+                    intersect: false,
+                    mode: "index",
                     callbacks: {
                       label: (item) => `標高: ${item.raw.toFixed(1)} m`,
                     },
@@ -622,10 +870,47 @@
                   y: { ticks: { beginAtZero: false } },
                   x: { ticks: { autoSkip: true, maxTicksLimit: 10 } },
                 },
+                onHover: (event, chartElements) => {
+                  if (chartElements.length > 0) {
+                    const index = chartElements[0].index;
+                    const position = currentRoutePath[index];
+                    if (!hoverMarker) {
+                      hoverMarker = new window.AdvancedMarkerElement({
+                        map: map,
+                        content: createHoverMarkerElement(),
+                        zIndex: 1001,
+                      });
+                    }
+                    hoverMarker.position = position;
+                    hoverMarker.map = map;
+                  }
+                },
               },
             });
           }
         );
+      }
+
+      function createHoverMarkerElement() {
+        const container = document.createElement("div");
+        container.className = "hover-marker-container";
+        const pulse = document.createElement("div");
+        pulse.className = "hover-marker-pulse";
+        container.appendChild(pulse);
+        return container;
+      }
+
+      function createElevationPointMarker(position, text, className, title) {
+        const content = document.createElement("div");
+        content.className = `elevation-marker-content ${className}`;
+        content.textContent = text;
+        const marker = new window.AdvancedMarkerElement({
+          position,
+          map,
+          content,
+          title,
+        });
+        elevationPointMarkers.push(marker);
       }
 
       document
